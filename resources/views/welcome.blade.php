@@ -49,9 +49,9 @@
                 </nav>
             @endif
         </header>
-        <div class="text-center bg-zinc-700 ">
-            <h1 class="text-red-500">
-                selamat datang di dashboad admin
+        <div class="text-center bg-blue-400 p-12 rounded-2xl">
+            <h1 class="text-purple-800 font-bold">
+                selamat datang di dashboard admin
             </h1>
         </div>
 
