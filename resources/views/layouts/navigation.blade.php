@@ -17,7 +17,7 @@
     <!-- Navigation Links -->
     <div class="flex-1 px-4 py-6 space-y-2 overflow-y-auto">
         <!-- Overview -->
-        <a href="{{ route('dashboard') }}" class="text-gray-300 hover:bg-gray-800 hover:text-white rounded-lg px-4 py-3 flex items-center space-x-3 transition group" :class="sidebarOpen ? '' : 'justify-center'">
+        <a href="{{ route('dashboard') }}" class="text-gray-300 hover:bg-gray-800 hover:text-white rounded-lg px-4 py-3 flex items-center space-x-3 transition group {{ request()->routeIs('dashboard') ? 'bg-gray-800 text-white' : 'text-gray-300 hover:bg-gray-800 hover:text-white' }}" :class="sidebarOpen ? '' : 'justify-center'">
             <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-3m0 0l7-4 7 4M5 9v10a1 1 0 001 1h12a1 1 0 001-1V9m-9 11l4-4m0 0l4 4m-4-4v4" />
             </svg>
@@ -26,7 +26,7 @@
         </a>
 
         <!-- Access Point -->
-        <a href="{{ route('access-point') }}" class="text-gray-300 hover:bg-gray-800 hover:text-white rounded-lg px-4 py-3 flex items-center space-x-3 transition group" :class="sidebarOpen ? '' : 'justify-center'">
+        <a href="{{ route('access-point') }}" class="text-gray-300 hover:bg-gray-800 hover:text-white rounded-lg px-4 py-3 flex items-center space-x-3 transition group {{ request()->routeIs('access-point') ? 'bg-gray-800 text-white' : 'text-gray-300 hover:bg-gray-800 hover:text-white' }}" :class="sidebarOpen ? '' : 'justify-center'">
             <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.111 16.251a.999.999 0 001.414 0l7.07-7.07m0 0a1 1 0 10-1.414-1.414L12 12.414l-6.293-6.293a1 1 0 00-1.414 1.414l7.07 7.07z" />
             </svg>
@@ -35,7 +35,7 @@
         </a>
 
         <!-- Connected Users -->
-        <a href="#" class="text-gray-300 hover:bg-gray-800 hover:text-white rounded-lg px-4 py-3 flex items-center space-x-3 transition group" :class="sidebarOpen ? '' : 'justify-center'">
+        <a href="#" class="text-gray-300 hover:bg-gray-800 hover:text-white rounded-lg px-4 py-3 flex items-center space-x-3 transition group " :class="sidebarOpen ? '' : 'justify-center'">
             <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 8.048M7 14H5m14 0h-2m-5-5h2m0 0h2m-2 0v2m0-2v-2m0 2a4 4 0 11-8 0m12-4h-2a2 2 0 00-2 2v2a2 2 0 002 2h2m0-6.5V9m0 3v2.5" />
             </svg>
