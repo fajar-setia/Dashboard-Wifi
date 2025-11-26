@@ -26,7 +26,7 @@
         </a>
 
         <!-- Access Point -->
-        <a href="#" class="text-gray-300 hover:bg-gray-800 hover:text-white rounded-lg px-4 py-3 flex items-center space-x-3 transition group" :class="sidebarOpen ? '' : 'justify-center'">
+        <a href="{{ route('access-point') }}"class="text-gray-300 hover:bg-gray-800 hover:text-white rounded-lg px-4 py-3 flex items-center space-x-3 transition group" :class="sidebarOpen ? '' : 'justify-center'">
             <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.111 16.251a.999.999 0 001.414 0l7.07-7.07m0 0a1 1 0 10-1.414-1.414L12 12.414l-6.293-6.293a1 1 0 00-1.414 1.414l7.07 7.07z" />
             </svg>

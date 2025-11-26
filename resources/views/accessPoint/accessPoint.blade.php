@@ -1,46 +1,6 @@
 <x-app-layout>
     <div class="flex bg-gray-900 min-h-screen text-gray-300">
 
-        <!-- Sidebar -->
-        <nav class="w-60 p-6 space-y-6 bg-gray-800">
-            <ul class="space-y-4">
-                <li>
-                    <a href="{{ route('dashboard') }}"
-                        class="flex items-center space-x-2 bg-gray-700 rounded-md px-4 py-2 font-semibold text-gray-300">
-                        <span>Overview</span>
-                    </a>
-                </li>
-
-                <li>
-                    <a href="{{ route('access-point') }}"
-                        class="flex items-center space-x-2 text-gray-300 font-semibold">
-                        <span>Access Point</span>
-                    </a>
-                </li>
-
-                <li>
-                    <a href="#"
-                        class="flex items-center space-x-2 cursor-pointer text-gray-500 hover:text-gray-300">
-                        <span>Connected Users</span>
-                    </a>
-                </li>
-
-                <li>
-                    <a href="#"
-                        class="flex items-center space-x-2 cursor-pointer text-gray-500 hover:text-gray-300">
-                        <span>Alert</span>
-                    </a>
-                </li>
-
-                <li>
-                    <a href="#"
-                        class="flex items-center space-x-2 cursor-pointer text-gray-500 hover:text-gray-300">
-                        <span>Settings</span>
-                    </a>
-                </li>
-            </ul>
-        </nav>
-
         <!-- Main -->
         <main class="flex-1 p-6 space-y-6">
 
