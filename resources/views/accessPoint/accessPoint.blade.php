@@ -1,109 +1,115 @@
-@section('title', 'Access Point')
+<x-app-layout>
+    <div class="flex bg-gray-900 min-h-screen text-gray-300">
 
-@section('content')
-<div class="flex min-h-screen">
-    <!-- Sidebar -->
-    <aside class="w-64 bg-[#0f1419] p-6">
-        <!-- Logo -->
-        <div class="mb-10">
-            <h1 class="text-2xl font-bold text-white">WiFi</h1>
-        </div>
+        <!-- Sidebar -->
+        <nav class="w-60 p-6 space-y-6 bg-gray-800">
+            <ul class="space-y-4">
+                <li>
+                    <a href="#"
+                        class="flex items-center space-x-2 bg-gray-700 rounded-md px-4 py-2 font-semibold text-gray-300">
+                        <span>Overview</span>
+                    </a>
+                </li>
 
-        <!-- Navigation Menu -->
-        <nav class="space-y-2">
-            <a href="" class="flex items-center space-x-3 px-4 py-3 rounded-lg text-gray-400 hover:bg-[#1a2332] hover:text-white transition">
-                <i class="fas fa-home w-5"></i>
-                <span>Overview</span>
-            </a>
-            
-            <a href="{{ route('access-point') }}" class="flex items-center space-x-3 px-4 py-3 rounded-lg bg-[#1e3a5f] text-blue-400 transition">
-                <i class="fas fa-wifi w-5"></i>
-                <span>Access Point</span>
-            </a>
-            
-            <a href="" class="flex items-center space-x-3 px-4 py-3 rounded-lg text-gray-400 hover:bg-[#1a2332] hover:text-white transition">
-                <i class="fas fa-users w-5"></i>
-                <span>Connected Users</span>
-            </a>
-            
-            <a href="" class="flex items-center space-x-3 px-4 py-3 rounded-lg text-gray-400 hover:bg-[#1a2332] hover:text-white transition">
-                <i class="fas fa-bell w-5"></i>
-                <span>Alert</span>
-            </a>
-            
-            <a href="" class="flex items-center space-x-3 px-4 py-3 rounded-lg text-gray-400 hover:bg-[#1a2332] hover:text-white transition">
-                <i class="fas fa-cog w-5"></i>
-                <span>Settings</span>
-            </a>
+                <li>
+                    <a href="{{ route('access-point') }}"
+                        class="flex items-center space-x-2 text-gray-300 font-semibold">
+                        <span>Access Point</span>
+                    </a>
+                </li>
+
+                <li>
+                    <a href="#"
+                        class="flex items-center space-x-2 cursor-pointer text-gray-500 hover:text-gray-300">
+                        <span>Connected Users</span>
+                    </a>
+                </li>
+
+                <li>
+                    <a href="#"
+                        class="flex items-center space-x-2 cursor-pointer text-gray-500 hover:text-gray-300">
+                        <span>Alert</span>
+                    </a>
+                </li>
+
+                <li>
+                    <a href="#"
+                        class="flex items-center space-x-2 cursor-pointer text-gray-500 hover:text-gray-300">
+                        <span>Settings</span>
+                    </a>
+                </li>
+            </ul>
         </nav>
-    </aside>
 
-    <!-- Main Content -->
-    <main class="flex-1">
-        <!-- Header -->
-        <header class="bg-[#0f1419] px-8 py-4 flex items-center justify-between">
-            <h2 class="text-2xl font-semibold text-white">Access Point</h2>
-            
-            <div class="flex items-center space-x-4">
-                <!-- Search Bar -->
-                <div class="relative">
-                    <i class="fas fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500"></i>
-                    <input 
-                        type="text" 
-                        placeholder="search" 
-                        class="bg-[#1a2332] text-gray-300 pl-10 pr-4 py-2 rounded-lg w-64 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    >
-                </div>
-                
-                <!-- Admin Button -->
-                <button class="flex items-center space-x-2 text-gray-400 hover:text-white transition">
-                    <i class="fas fa-bell"></i>
-                    <span>Admin</span>
-                </button>
-            </div>
-        </header>
+        <!-- Main -->
+        <main class="flex-1 p-6 space-y-6">
 
-        <!-- Content Area -->
-        <div class="p-8">
-            <!-- Access Point Card -->
-            <div class="bg-[#1e2937] rounded-xl p-6 mb-6">
-                <div class="flex items-center justify-between mb-6">
-                    <div>
-                        <p class="text-gray-400 text-sm mb-2">Name</p>
-                        <h3 class="text-3xl font-bold text-white">{{ $accessPoint->name ?? 'AP - 01' }}</h3>
-                    </div>
-                    <div class="flex items-center space-x-2">
-                        <span class="w-3 h-3 bg-green-500 rounded-full animate-pulse"></span>
-                        <span class="text-green-400 font-medium">{{ $accessPoint->status ?? 'Online' }}</span>
-                    </div>
+            <h1 class="text-white font-bold text-2xl mb-4">Access Point</h1>
+
+            <!-- Card Summary -->
+            <div class="grid grid-cols-4 gap-6">
+
+                <div class="bg-gray-800 rounded-lg p-4">
+                    <p class="text-gray-400">Total Access Point</p>
+                    <p class="text-white font-bold text-2xl">8</p>
                 </div>
+
+                <div class="bg-gray-800 rounded-lg p-4">
+                    <p class="text-gray-400">AP Online</p>
+                    <p class="text-green-400 font-bold text-2xl">7</p>
+                </div>
+
+                <div class="bg-gray-800 rounded-lg p-4">
+                    <p class="text-gray-400">AP Offline</p>
+                    <p class="text-red-400 font-bold text-2xl">1</p>
+                </div>
+
+                <div class="bg-gray-800 rounded-lg p-4">
+                    <p class="text-gray-400">Total Connected Users</p>
+                    <p class="text-white font-bold text-2xl">123</p>
+                </div>
+
             </div>
 
-            <!-- Details Card -->
-            <div class="bg-[#1e2937] rounded-xl p-6">
-                <h4 class="text-xl font-semibold text-white mb-6">Details</h4>
-                
-                <div class="grid grid-cols-2 gap-8">
-                    <!-- IP Address -->
-                    <div>
-                        <p class="text-gray-400 text-sm mb-2">IP Address</p>
-                        <p class="text-white font-medium">{{ $accessPoint->ip_address ?? '192.168.100.1' }}</p>
-                    </div>
-                    
-                    <!-- MAC Address -->
-                    <div>
-                        <p class="text-gray-400 text-sm mb-2">MAC Address</p>
-                        <p class="text-white font-medium">{{ $accessPoint->mac_address ?? 'AA:BB:CC:DD:EE' }}</p>
-                    </div>
-                    
-                    <!-- Channel -->
-                    <div>
-                        <p class="text-gray-400 text-sm mb-2">Channel</p>
-                        <p class="text-white font-medium">{{ $accessPoint->channel ?? '6' }}</p>
-                    </div>
-                </div>
+            <!-- Data Access Point Table -->
+            <div class="bg-gray-800 rounded-lg p-6">
+                <h3 class="text-white font-semibold mb-4">Access Point Status</h3>
+
+                <table class="w-full text-left text-gray-300">
+                    <thead>
+                        <tr>
+                            <th class="pb-2">AP Name</th>
+                            <th class="pb-2">IP Address</th>
+                            <th class="pb-2">Status</th>
+                            <th class="pb-2">Connected Users</th>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+                        <tr class="border-b border-gray-700">
+                            <td class="py-2">AP Lantai 1</td>
+                            <td class="py-2">192.168.1.20</td>
+                            <td class="py-2 flex items-center space-x-2">
+                                <span class="w-3 h-3 bg-green-500 rounded-full inline-block"></span>
+                                <span>Online</span>
+                            </td>
+                            <td class="py-2">12</td>
+                        </tr>
+
+                        <tr class="border-b border-gray-700">
+                            <td class="py-2">AP Lantai 2</td>
+                            <td class="py-2">192.168.1.21</td>
+                            <td class="py-2 flex items-center space-x-2">
+                                <span class="w-3 h-3 bg-red-500 rounded-full inline-block"></span>
+                                <span>Offline</span>
+                            </td>
+                            <td class="py-2">0</td>
+                        </tr>
+
+                    </tbody>
+                </table>
             </div>
-        </div>
-    </main>
-</div>
-@endsection
+
+        </main>
+    </div>
+</x-app-layout>
