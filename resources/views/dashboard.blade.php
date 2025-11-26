@@ -3,7 +3,7 @@
     <div class="p-2 space-y-2">
 
         <!-- Summary -->
-         <div class="grid grid-cols-4 gap-6">
+        <div class="grid grid-cols-4 gap-6">
             <div class="bg-gray-800 rounded-lg p-4">
                 <p class="text-gray-400">Connected Users</p>
                 <p class="text-white font-bold text-2xl">{{ $userOnline }}</p>
@@ -19,48 +19,15 @@
                 <p class="text-white font-bold text-2xl">134</p>
             </div>
 
-            <div class="bg-gray-800 rounded-lg p-4">
+            <div class="bg-gray-800 rounded-lg p-2 w-50 h-40">
                 <canvas id="userChart"></canvas>
             </div>
         </div>
 
-        <!-- Connected Users Table -->
+        {{-- grafik users --}}
         <div class="bg-gray-800 rounded-lg p-6">
-            <h3 class="text-white font-semibold mb-4">Connected Users</h3>
-            <table class="w-full text-left text-gray-300">
-                <thead>
-                    <tr>
-                        <th class="pb-2">Device Name</th>
-                        <th class="pb-2">IP Address</th>
-                        <th class="pb-2">Status</th>
-                    </tr>
-                </thead>
-                <tbody>
-
-                    @foreach ($connections as $c)
-                        @php
-                            $clients = array_merge(
-                                $c['wifiClients']['5G'] ?? [],
-                                $c['wifiClients']['2_4G'] ?? [],
-                                $c['wifiClients']['unknown'] ?? []
-                            );
-                        @endphp
-
-                        @foreach ($clients as $client)
-                            <tr class="border-b border-gray-700">
-                                <td class="py-2">{{ $client['wifi_terminal_name'] ?? 'Unknown' }}</td>
-                                <td class="py-2">{{ $client['wifi_terminal_ip'] ?? '-' }}</td>
-                                <td class="py-2 flex items-center space-x-2">
-                                    <span class="w-3 h-3 bg-green-500 rounded-full inline-block"></span>
-                                    <span>Online</span>
-                                </td>
-                            </tr>
-                        @endforeach
-
-                    @endforeach
-
-                </tbody>
-            </table>
+            <h3 class="text-white font-semibold mb-4">Grafik Users</h3>
+            <canvas id="userChartDaily"></canvas>
         </div>
 
         <!-- Detail Table -->
@@ -83,7 +50,7 @@
                             $clients = array_merge(
                                 $c['wifiClients']['5G'] ?? [],
                                 $c['wifiClients']['2_4G'] ?? [],
-                                $c['wifiClients']['unknown'] ?? []
+                                $c['wifiClients']['unknown'] ?? [],
                             );
                         @endphp
 
@@ -96,7 +63,6 @@
                                 <td class="py-2">-</td>
                             </tr>
                         @endforeach
-
                     @endforeach
 
                 </tbody>
@@ -120,6 +86,9 @@
                 }]
             }
         });
+
+        window.dailyUsersLabels = @json($dailyUsers['labels'] ?? []);
+        window.dailyUsersData = @json($dailyUsers['data'] ?? []);
     </script>
 
 </x-app-layout>

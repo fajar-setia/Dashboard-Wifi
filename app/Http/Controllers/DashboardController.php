@@ -16,6 +16,10 @@ class DashboardController extends Controller
         $userOnline = 0;
         $totalUser = 0;
         $logActivity = collect();
+        $dailyUsers = [
+            'labels' => ['Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab', 'Min'],
+            'data' => [12, 15, 9, 20, 25, 18, 10],
+        ];
 
         try {
             $responseOnu = Http::timeout(5)->get('http://172.16.100.26:67/api/onu');
@@ -29,7 +33,7 @@ class DashboardController extends Controller
                 $connections = $responseConn->json();
                 if (is_array($connections)) {
                     foreach ($connections as $c) {
-                        if (!is_array($c) || !isset($c['wifiClients']) || !is_array($c['wifiClients'])) {
+                        if (! is_array($c) || ! isset($c['wifiClients']) || ! is_array($c['wifiClients'])) {
                             continue;
                         }
                         $wifi = $c['wifiClients'];
@@ -52,8 +56,8 @@ class DashboardController extends Controller
                 $sn = $c['sn'] ?? null;
                 $wifi = $c['wifiClients'] ?? [];
                 foreach ($wifi['unknown'] ?? [] as $client) {
-                    $logActivity->push((object)[
-                        'time' => now()->subMinutes(rand(1,30)),
+                    $logActivity->push((object) [
+                        'time' => now()->subMinutes(rand(1, 30)),
                         'user' => $client['wifi_terminal_name'] ?? 'Unknown',
                         'ap' => $sn,
                         'action' => 'connected',
@@ -63,11 +67,12 @@ class DashboardController extends Controller
         }
 
         return view('dashboard', [
-            'totalUser'  => $totalUser,
-            'totalAp'    => $totalAp,
+            'totalUser' => $totalUser,
+            'totalAp' => $totalAp,
             'userOnline' => $userOnline,
-            'logActivity'=> $logActivity,
-            'connections'=> $connections,
+            'logActivity' => $logActivity,
+            'connections' => $connections,
+            'dailyUsers' => $dailyUsers,
         ]);
     }
 }
