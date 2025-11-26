@@ -5,7 +5,7 @@
         <nav class="w-60 p-6 space-y-6 bg-gray-800">
             <ul class="space-y-4">
                 <li>
-                    <a href="#"
+                    <a href="{{ route('dashboard') }}"
                         class="flex items-center space-x-2 bg-gray-700 rounded-md px-4 py-2 font-semibold text-gray-300">
                         <span>Overview</span>
                     </a>
