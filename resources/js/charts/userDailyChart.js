@@ -4,7 +4,7 @@ export function renderUserDailyChart(labels, data) {
     const ctx = document.getElementById('userChartDaily').getContext('2d');
 
     new Chart(ctx, {
-        type: 'line',
+        type: 'bar',
         data: {
             labels: labels,
             datasets: [{

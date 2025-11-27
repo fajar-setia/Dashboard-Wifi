@@ -39,6 +39,10 @@
             </div>
         </div>
 
+        <div class="h-6">
+            <h1>sudah di ganti</h1>
+        </div>
+
         <!-- Detail Table -->
         <div class="bg-gray-800 rounded-lg p-6 shadow-lg overflow-x-auto">
             <h3 class="text-white font-semibold mb-6 text-lg">Detail Connected Devices</h3>
