@@ -1,0 +1,30 @@
+git switch main
+git pull origin main
+
+git switch -c <namaBranch>
+
+[ngoding]
+
+git add .
+git commit -m "pesan commit"
+
+git pull origin main --rebase #pastikan dulu biar tidak bentrok
+
+git push origin <namaBranch>
+
+[bikin PR, merge] # 1. masuk ke github repo
+                    2. kemudian compare & pull request
+                    3. kasih judul, jelasin, create
+
+git switch main
+git pull origin main
+
+
+
+
+!!penting
+sudo crontab -e -u www-data #untuk schedule trigger laravel setiap menit
+kalo masih di local
+1. php artisan serve #untuk menjalankan aplikasinya
+2. npm run dev #untuk menjalankan framework tailwindcss nya
+3. php artisan schedule:work #tahap pengembangan agar schedule tetap jalan

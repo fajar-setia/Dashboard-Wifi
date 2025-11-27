@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
@@ -18,7 +19,7 @@ class DashboardController extends Controller
         $logActivity = collect();
         $dailyUsers = [
             'labels' => ['Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab', 'Min'],
-            'data' => [12, 15, 9, 20, 25, 18, 10],
+            'data' => [],
         ];
 
         try {
@@ -65,6 +66,28 @@ class DashboardController extends Controller
                 }
             }
         }
+
+        $base = collect();
+        for ($i = 6; $i >= 0; $i--) {
+            $date = now()->subDays($i)->toDateString();
+            $base[$date] = 0;                    // default 0
+        }
+
+        // timpa dengan data yang ADA
+        $stats = DB::table('daily_user_stats')
+            ->where('date', '>=', now()->subDays(6))
+            ->pluck('user_count', 'date');   // key = date, value = count
+
+        $base = $base->merge($stats);            // hari ada → ditimpa
+
+        $labels = $base->keys()->map(fn ($d) => \Carbon\Carbon::parse($d)->locale('id')->shortDayName
+        );
+        $data = $base->values();
+
+        $dailyUsers = [
+            'labels' => $labels,
+            'data' => $data,
+        ];
 
         return view('dashboard', [
             'totalUser' => $totalUser,
