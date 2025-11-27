@@ -21,7 +21,7 @@ export function renderUserDailyChart(labels, data) {
         },
         options: {
             maintainAspectRatio: false,
-            responsive: false,
+            responsive: true,
             scales: {
                 y: {
                     beginAtZero: true,
