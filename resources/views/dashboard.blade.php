@@ -21,17 +21,17 @@
         </div>
 
         <!-- Charts Section -->
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <!-- User Capacity Chart -->
-            <div class="bg-gray-800 rounded-lg p-6 shadow-lg">
+        <div class="flex gap-6">
+            <!-- User Capacity Chart (30%) -->
+            <div class="bg-gray-800 rounded-lg p-6 shadow-lg" style="width: 30%;">
                 <p class="text-white font-semibold mb-4 text-center">User Capacity</p>
                 <div class="h-64">
                     <canvas id="userChart" class="w-full h-full"></canvas>
                 </div>
             </div>
 
-            <!-- Daily Users Chart -->
-            <div class="bg-gray-800 rounded-lg p-6 shadow-lg">
+            <!-- Daily Users Chart (70%) -->
+            <div class="bg-gray-800 rounded-lg p-6 shadow-lg" style="width: 70%;">
                 <h3 class="text-white font-semibold mb-4">Grafik Users</h3>
                 <div class="h-64">
                     <canvas id="userChartDaily" class="w-full h-full"></canvas>
@@ -39,9 +39,6 @@
             </div>
         </div>
 
-        <div class="h-6">
-            <h1>sudah di ganti</h1>
-        </div>
 
         <!-- Detail Table -->
         <div class="bg-gray-800 rounded-lg p-6 shadow-lg overflow-x-auto">
