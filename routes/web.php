@@ -3,11 +3,8 @@
 use App\Http\Controllers\ProfileController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\DashboardController;
-<<<<<<< Updated upstream
 use App\Http\Controllers\AccessPointController;
-=======
 use App\Http\Controllers\ConnectedUsers;
->>>>>>> Stashed changes
 
 Route::get('/', function () {
     return view('welcome');
