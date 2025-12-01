@@ -3,6 +3,7 @@
 use App\Http\Controllers\ProfileController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\AccessPointController;
 
 Route::get('/', function () {
     return view('welcome');
@@ -18,9 +19,9 @@ Route::middleware('auth')->group(function () {
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 });
 
-Route::get('/access-point', function () {
-    return view('accessPoint.accessPoint');
-})->name('access-point');
+Route::get('/access-point', [AccessPointController::class, 'index'])
+    ->middleware(['auth', 'verified'])
+    ->name('access-point');
 
 
 require __DIR__.'/auth.php';
