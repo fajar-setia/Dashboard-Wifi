@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
+
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -18,12 +19,12 @@
 
         @include('layouts.navigation')
 
-        <main :class="sidebarOpen ? 'ml-64' : 'ml-20'"
-              class="w-full transition-all duration-300 p-6">
+        <main class="transition-all duration-300 py-6 w-full" :class="sidebarOpen ? 'ml-64 pr-4' : 'ml-20 pr-4'">
             {{ $slot }}
         </main>
 
     </div>
 
 </body>
+
 </html>
