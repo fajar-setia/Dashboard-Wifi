@@ -13,18 +13,28 @@
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
 
+<style>
+    [x-cloak] {
+        display: none !important;
+    }
+</style>
+
 <body class="font-sans antialiased bg-gray-900" x-data="{ sidebarOpen: true }">
 
     <div class="flex min-h-screen">
 
         @include('layouts.navigation')
 
-        <main class="transition-all duration-300 py-6 w-full" :class="sidebarOpen ? 'ml-64 pr-4' : 'ml-20 pr-4'">
-            {{ $slot }}
+        <main class="flex-1 transition-all duration-300"
+              :class="sidebarOpen ? 'ml-64' : 'ml-20'">
+            <div class="p-4 sm:p-6 lg:p-8">
+                {{ $slot }}
+            </div>
         </main>
 
     </div>
 
 </body>
+
 
 </html>
