@@ -80,6 +80,7 @@
         </a>
 
         <!-- Alert -->
+<<<<<<< Updated upstream
         <a href="#"
             class="relative rounded-lg px-4 py-3 flex items-center space-x-3 transition-all duration-200 group text-gray-300 hover:bg-gray-800 hover:text-white"
             :class="sidebarOpen ? '' : 'justify-center'">
@@ -87,6 +88,11 @@
                 stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                     d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+=======
+        <a href="{{ route('alert') }}" class="text-gray-300 hover:bg-gray-800 hover:text-white rounded-lg px-4 py-3 flex items-center space-x-3 transition group {{ request()->routeIs('alert') ? 'bg-gray-800 text-white' : 'text-gray-300 hover:bg-gray-800 hover:text-white' }} relative" :class="sidebarOpen ? '' : 'justify-center'">
+            <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+>>>>>>> Stashed changes
             </svg>
             <span :class="sidebarOpen ? 'inline' : 'hidden'" class="font-medium">{{ __('Alert') }}</span>
             <span :class="sidebarOpen ? 'ml-auto' : 'absolute -top-1 -right-1'"

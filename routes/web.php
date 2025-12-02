@@ -27,4 +27,9 @@ Route::get('/access-point', [AccessPointController::class, 'index'])
 Route::get('/connectUser', [ConnectedUsers::class, 'index'])
     ->name('connectUser');
 
+Route::get('/alert', function () {
+    return view('alert.alert');
+})->name('alert');
+
+
 require __DIR__.'/auth.php';

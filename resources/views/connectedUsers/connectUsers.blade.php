@@ -26,14 +26,14 @@
 
                             <!-- 70% -->
                             <div class="col-span-7 flex items-center justify-between">
-                                {{-- <div>
+                                <div>
                                     <p class="text-sm text-gray-300">Connected Users</p>
                                     <p class="text-2xl font-bold">{{ $ap['connected'] }}</p>
                                 </div>
 
                                 <div
-                                    class="h-3 w-3 rounded-full {{ $ap['status'] == 'Online' ? 'bg-green-500' : 'bg-red-500' }}">
-                                </div> --}}
+                                    class="h-3 w-3 rounded-full {{ $ap['state'] == 'online' ? 'bg-green-500' : 'bg-red-500' }}">
+                                </div>
                             </div>
 
                         </div>
