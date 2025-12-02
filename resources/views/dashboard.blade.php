@@ -41,12 +41,12 @@
 
         <!-- Charts Section -->
         <!-- Charts Section -->
-        <div class="grid gap-4 grid-cols-[4fr_6fr] rounded-xl">
+        <div class="grid gap-4 xl:grid-cols-[4fr_6fr] lg:grid-cols-2 rounded-xl">
             <!-- KIRI -->
             <div class="bg-slate-800/50 backdrop-blur rounded-xl p-4 border border-slate-700/50 flex flex-col  shadow-xl shadow-black/20">
                 <p class="text-white font-semibold mb-3 text-center">User Capacity</p>
                 <div class="relative w-full h-56">
-                    <canvas id="userChart" class="absolute inset-0 w-full h-full block"></canvas>
+                    <canvas id="userChart" class="absolute inset-0 h-full block"></canvas>
                 </div>
             </div>
 
@@ -54,7 +54,7 @@
             <div class="bg-slate-800/50 backdrop-blur rounded-xl p-4 border border-slate-700/50 flex flex-col  shadow-xl shadow-black/20">
                 <h3 class="text-white font-semibold mb-3">Grafik Users</h3>
                 <div class="w-full h-56">
-                    <canvas id="userChartDaily" class="w-full h-full"></canvas>
+                    <canvas id="userChartDaily" class=" h-full"></canvas>
                 </div>
             </div>
         </div>
