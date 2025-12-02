@@ -28,7 +28,7 @@ Route::get('/connectUser', [ConnectedUsers::class, 'index'])
     ->name('connectUser');
 
 Route::get('/alert', function () {
-    return view('alert.alert');
+    return view('Alert.alert');
 })->name('alert');
 
 
