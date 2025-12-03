@@ -10,9 +10,14 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
 
-<body class=" bg-gray-900 font-sans text-white">
+<body class=" bg-gray-700 font-sans ">
     <div class="flex items-center justify-center h-screen">
-        <div class="flex flex-col items-center justify-center bg-transparent  backdrop-blur-2xl px-32 py-20 rounded-2xl shadow-xl shadow-black/30 border border-black-1.5">
+        <div class="flex flex-col items-center justify-center
+            bg-black/30 backdrop-blur-lg
+            px-16 py-12
+            rounded-2xl
+            border border-white/10
+            shadow-xl shadow-black/50">
 
             <img src="{{ asset('images/ilustratorMonitor.jpg') }}" alt="ilustrator" class="w-72 mb-6 rounded-lg">
 
@@ -26,10 +31,6 @@
 
         </div>
     </div>
-
-
-
-
     <script>
         function toggleMenu() {
             const menu = document.getElementById('mobile-menu');
