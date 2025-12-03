@@ -6,8 +6,12 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\AccessPointController;
 use App\Http\Controllers\ConnectedUsers;
 
-Route::get('/', function () {
-    return view('welcome');
+// Route::get('/', function () {
+//     return view('welcome');
+// });
+
+Route::get('/', function() {
+    return redirect()->route('login');
 });
 
 Route::get('/dashboard', [DashboardController::class, 'index'])
