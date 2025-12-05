@@ -2,8 +2,9 @@
 
 namespace App\Providers;
 
-use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
+use Illuminate\Support\Facades\View;
+use App\Http\Controllers\AlertNotifController;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -15,15 +16,12 @@ class AppServiceProvider extends ServiceProvider
         //
     }
 
-    /**
-     * Bootstrap any application services.
-     */
-    public function boot(): void
+    public function boot()
     {
-        // View::composer('*', function ($view) {
-        //     $alert = getAlertData();
-        //     $view->with('alertcount', $alert['alertcount']);
-        // });
+        View::composer('layouts.navigation', function ($view) {
+            $alertCount = AlertNotifController::getAlertCount();
+            $view->with('alertCount', $alertCount);
+        });
 
     }
 }

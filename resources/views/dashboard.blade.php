@@ -34,7 +34,7 @@
                 <div class="relative">
                     <p class="text-emerald-200 text-sm font-medium mb-2 uppercase tracking-wider">Total Bandwidth Today
                     </p>
-                    <p class="text-white font-bold text-4xl">134</p>
+                    <p class="text-white font-bold text-4xl">190</p>
                 </div>
             </div>
         </div>
