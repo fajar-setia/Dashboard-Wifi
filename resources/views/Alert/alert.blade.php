@@ -43,7 +43,7 @@
                 @foreach ($apOffline ?? [] as $ap)
                     <div class="text-red-400 text-sm mb-2 flex items-center gap-2">
                         <span class="w-2 h-2 rounded-full bg-red-500"></span>
-                        <span>AP Offline: {{ $ap->name ?? 'Tanpa Nama' }}</span>
+                        <span>AP Offline: {{ $ap['sn'] ?? 'Anonymous' }}</span>
                     </div>
                 @endforeach
 
