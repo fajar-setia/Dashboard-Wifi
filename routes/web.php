@@ -5,6 +5,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\AccessPointController;
 use App\Http\Controllers\ConnectedUsers;
+use App\Http\Controllers\AlertController;
 
 // Route::get('/', function () {
 //     return view('welcome');
@@ -31,9 +32,6 @@ Route::get('/access-point', [AccessPointController::class, 'index'])
 Route::get('/connectUser', [ConnectedUsers::class, 'index'])
     ->name('connectUser');
 
-Route::get('/alert', function () {
-    return view('Alert.alert');
-})->name('alert');
-
+Route::get('/alert', [AlertController::class, 'index'])->name('alert');
 
 require __DIR__.'/auth.php';
