@@ -40,7 +40,6 @@
         </div>
 
         <!-- Charts Section -->
-        <!-- Charts Section -->
         <div class="grid gap-4 xl:grid-cols-[4fr_6fr] lg:grid-cols-2 rounded-xl">
             <!-- KIRI -->
             <div class="bg-slate-800/50 backdrop-blur rounded-xl p-4 border border-slate-700/50 flex flex-col  shadow-xl shadow-black/20">
