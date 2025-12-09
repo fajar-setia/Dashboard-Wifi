@@ -23,7 +23,7 @@ class AlertController extends Controller
             $newDevices = $aps->flatMap(function ($ap) {
                 $clients = $ap['wifiClients'] ?? [];
                 return collect($clients)->flatMap(fn($group) => collect($group)->pluck('wifi_terminal_mac'));
-            })->unique()->take(10)->values();
+            })->unique()->take(5)->values();
 
             $activeUsers = $aps->sum(function ($ap) {
                 $clients = $ap['wifiClients'] ?? [];
