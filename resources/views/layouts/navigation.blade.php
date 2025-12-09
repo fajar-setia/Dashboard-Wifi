@@ -6,8 +6,8 @@
 
     <!-- Logo Section & Toggle Button -->
     <div class="shrink-0 flex items-center justify-between p-6 border-b border-gray-700/50">
-        <a href="{{ route('dashboard') }}" :class="sidebarOpen ? 'block' : 'hidden'" class="transition-all duration-300">
-            <x-application-logo class="block h-9 w-auto fill-current text-white" />
+        <a href="{{ route('dashboard') }}" :class="sidebarOpen ? 'block' : 'hidden'" class="transition-all duration-300 w-32 ">
+            <img src="{{ asset('images/logo.png') }}" alt="logo" srcset="">
         </a>
 
         <!-- Toggle Button - Hidden on mobile -->
