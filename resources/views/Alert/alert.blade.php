@@ -5,7 +5,7 @@
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
 
             <!-- Total Alerts Today -->
-            <div class="bg-gray-800 p-4 rounded-lg shadow">
+            <div class="bg-gradient-to-br from-blue-600 to-blue-800 rounded-xl p-6 shadow-xl hover:shadow-2xl hover:shadow-blue-500/20 transition-all duration-300 hover:scale-105">
                 <p class="text-gray-300 text-sm">Total Alerts Today</p>
                 <p class="text-3xl font-bold text-white mt-2">
                     {{ $alertCount ?? 0 }}
@@ -13,7 +13,7 @@
             </div>
 
             <!-- Active Users -->
-            <div class="bg-gray-800 p-4 rounded-lg shadow">
+            <div class="bg-gradient-to-br from-purple-600 to-purple-800 rounded-xl p-6 shadow-xl hover:shadow-2xl hover:shadow-purple-500/20 transition-all duration-300 hover:scale-105">
                 <p class="text-gray-300 text-sm">Active Users</p>
                 <p class="text-3xl font-bold text-white mt-2">
                     {{ $activeUsers ?? 0 }}
@@ -21,7 +21,7 @@
             </div>
 
             <!-- Connected AP -->
-            <div class="bg-gray-800 p-4 rounded-lg shadow">
+            <div class="bg-gradient-to-br from-emerald-600 to-emerald-800 rounded-xl p-6 shadow-xl hover:shadow-2xl hover:shadow-emerald-500/20 transition-all duration-300 hover:scale-105">
                 <p class="text-gray-300 text-sm">Connected AP</p>
                 <p class="text-3xl font-bold text-white mt-2">
                     {{ collect($aps)->count() }}
