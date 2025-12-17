@@ -28,3 +28,4 @@ kalo masih di local
 1. php artisan serve #untuk menjalankan aplikasinya
 2. npm run dev #untuk menjalankan framework tailwindcss nya
 3. php artisan schedule:work #tahap pengembangan agar schedule tetap jalan
+4. php artisan collect:daily-users #untuk mengambil data perhari
