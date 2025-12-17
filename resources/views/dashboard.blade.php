@@ -21,7 +21,7 @@
                     class="absolute inset-0 bg-gradient-to-r from-purple-400/0 to-purple-400/0 group-hover:from-purple-400/10 group-hover:to-purple-400/20 transition-all duration-300">
                 </div>
                 <div class="relative">
-                    <p class="text-purple-200 text-sm font-medium mb-2 uppercase tracking-wider">Active AP</p>
+                    <p class="text-purple-200 text-sm font-medium mb-2 uppercase tracking-wider">Total AP</p>
                     <p class="text-white font-bold text-4xl">{{ $totalAp }}</p>
                 </div>
             </div>
@@ -125,35 +125,64 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
     <script>
-        const userChart = document.getElementById('userChart').getContext('2d');
+          const userChart = document.getElementById('userChart').getContext('2d');
         new Chart(userChart, {
-            type: 'doughnut',
+            type: 'bar',
             data: {
-                labels: ['Connected Users', 'Capacity'],
+                labels: ['Connected Users'], // Label untuk sumbu X
                 datasets: [{
-                    data: [@json($userOnline ?? 0), @json(max(0, 200 - ($userOnline ?? 0)))],
-                    backgroundColor: ['#3b82f6', '#374151'],
+                    label: 'Online Users', // Nama dataset (muncul di legend)
+                    data: [@json($userOnline ?? 0)], // Hanya data connected user
+                    backgroundColor: '#3b82f6', // Biru cerah
+                    borderColor: '#1f2937', // Hitam/abu-abu tua
                     borderWidth: 2,
-                    borderColor: '#1f2937'
+                    borderRadius: 8 // Opsional: sudut membulat
                 }]
             },
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
-                plugins: {
-                    legend: {
-                        position: 'bottom',
-                        labels: {
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
                             color: '#d1d5db',
-                            padding: 20,
+                            stepSize: 1, // Agar skala naik per 1 unit (jika jumlah kecil)
                             font: {
                                 size: 12
+                            }
+                        },
+                        grid: {
+                            color: 'rgba(255, 255, 255, 0.1)'
+                        }
+                    },
+                    x: {
+                        ticks: {
+                            color: '#d1d5db',
+                            font: {
+                                size: 14
+                            }
+                        },
+                        grid: {
+                            display: false // Hilangkan grid di sumbu X
+                        }
+                    }
+                },
+                plugins: {
+                    legend: {
+                        display: false // Sembunyikan legend karena cuma 1 bar
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return `Connected: ${context.raw}`;
                             }
                         }
                     }
                 }
             }
         });
+
 
         window.dailyUsersLabels = @json($dailyUsers['labels'] ?? []);
         window.dailyUsersData = @json($dailyUsers['data'] ?? []);

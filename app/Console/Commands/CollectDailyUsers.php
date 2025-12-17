@@ -10,7 +10,7 @@ use Illuminate\Support\Facades\DB;
 class CollectDailyUsers extends Command
 {
     protected $signature = 'collect:daily-users';
-    protected $description = 'Collect unique wifi users from API and store daily count';
+    protected $description = 'Collect peak daily unique wifi users';
 
     public function handle()
     {
@@ -19,28 +19,26 @@ class CollectDailyUsers extends Command
             $response = Http::timeout(10)->get('http://172.16.100.26:67/api/onu/connect');
 
             if (! $response->ok()) {
-                Log::warning('CollectDailyUsers: API returned non-ok status: ' . $response->status());
+                Log::warning('API not OK: '.$response->status());
                 $this->error('API not OK');
                 return 1;
             }
 
             $connections = $response->json();
-
             if (!is_array($connections)) {
-                Log::warning('CollectDailyUsers: unexpected response structure');
-                $this->error('Unexpected response');
+                Log::warning('Invalid API response');
+                $this->error('Invalid API response');
                 return 1;
             }
 
+            // Hitung unique MAC
             $macSet = [];
-
             foreach ($connections as $c) {
                 if (!isset($c['wifiClients']) || !is_array($c['wifiClients'])) {
                     continue;
                 }
 
                 $wifi = $c['wifiClients'];
-
                 $all = array_merge(
                     $wifi['5G'] ?? [],
                     $wifi['2_4G'] ?? [],
@@ -50,28 +48,36 @@ class CollectDailyUsers extends Command
                 foreach ($all as $client) {
                     if (!isset($client['wifi_terminal_mac'])) continue;
                     $mac = strtoupper(trim($client['wifi_terminal_mac']));
-                    // normalisasi mac (opsional): hapus '-' atau '.' dsb
                     $mac = preg_replace('/[^A-F0-9:]/i', '', $mac);
                     if ($mac === '') continue;
                     $macSet[$mac] = true;
                 }
             }
 
-            $uniqueCount = count($macSet);
-            $date = now()->toDateString();
+            $currentCount = count($macSet);
+            $this->info("Current unique users: {$currentCount}");
 
-            // Simpan (updateOrInsert)
-            DB::table('daily_user_stats')->updateOrInsert(
-                ['date' => $date],
-                [
-                    'user_count' => $uniqueCount,
-                    'meta' => json_encode(['sample_count' => $uniqueCount, 'collected_at' => now()->toDateTimeString()]),
-                    'updated_at' => now()
-                ]
-            );
+            // SIMPAN PEAK HARIAN (UPSERT + GREATEST)
+            DB::statement("
+                INSERT INTO daily_user_stats (date, user_count, meta, updated_at)
+                VALUES (
+                    CURRENT_DATE,
+                    {$currentCount},
+                    json_build_object(
+                        'sample_count', {$currentCount},
+                        'collected_at', now()
+                    ),
+                    now()
+                )
+                ON CONFLICT (date)
+                DO UPDATE SET
+                    user_count = GREATEST(daily_user_stats.user_count, EXCLUDED.user_count),
+                    updated_at = now()
+            ");
 
-            $this->info("Saved {$uniqueCount} unique users for {$date}");
+            $this->info('Daily peak saved successfully');
             return 0;
+
         } catch (\Throwable $e) {
             Log::error('CollectDailyUsers error: '.$e->getMessage());
             $this->error('Exception: '.$e->getMessage());

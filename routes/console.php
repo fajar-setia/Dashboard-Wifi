@@ -9,7 +9,6 @@ Artisan::command('inspire', function () {
     $this->comment(Inspiring::quote());
 })->purpose('Display an inspiring quote');
 
-Schedule::command(new CollectDailyUsers)
-        ->dailyAt('23:55')        // atau ->everyTenMinutes() untuk test
-        ->withoutOverlapping()     // hindari bentrok kalau cron lama blm selesai
-        ->onOneServer();  
+Schedule::command('collect:daily-users')
+        ->everyMinute()
+        ->appendOutputTo(storage_path('logs/scheduler.log'));
