@@ -3,6 +3,8 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Support\Facades\Http;
+use Illuminate\Http\Client\Response;
+use Illuminate\Http\Client\ConnectionException;
 
 class AccessPointController extends Controller
 {
@@ -16,13 +18,37 @@ class AccessPointController extends Controller
         $onuResponse = $responses[0];
         $connectResponse = $responses[1];
 
-        if (! $onuResponse->successful() || ! $connectResponse->successful()) {
+        /* =====================================================
+         | 1️⃣ HANDLE TIMEOUT / CONNECTION FAILED
+         ===================================================== */
+        if (
+            $onuResponse instanceof ConnectionException ||
+            $connectResponse instanceof ConnectionException
+        ) {
+            return view('accessPoint.accessPoint', [
+                'devices' => collect([]),
+                'error' => 'API bermasalah / tidak merespon',
+            ]);
+        }
+
+        /* =====================================================
+         | 2️⃣ HANDLE API ERROR (STATUS != 200)
+         ===================================================== */
+        if (
+            !($onuResponse instanceof Response) ||
+            !($connectResponse instanceof Response) ||
+            ! $onuResponse->successful() ||
+            ! $connectResponse->successful()
+        ) {
             return view('accessPoint.accessPoint', [
                 'devices' => collect([]),
                 'error' => 'Gagal mengambil data dari API',
             ]);
         }
 
+        /* =====================================================
+         | 3️⃣ NORMAL FLOW
+         ===================================================== */
         $onuData = $onuResponse->json();
         $connectRaw = $connectResponse->json();
 

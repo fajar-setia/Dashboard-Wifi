@@ -5,6 +5,12 @@
 
             <h1 class="text-white font-bold text-2xl mb-4">Connected Users</h1>
 
+            @if (!empty($error))
+                <div class="bg-red-500 text-white px-4 py-3 rounded-lg mb-6">
+                    {{ $error }}
+                </div>
+            @endif
+
             <div class="space-y-4">
 
                 @foreach ($aps as $ap)
@@ -57,8 +63,12 @@
                                             <td class="py-4 ">{{ $client['wifi_terminal_name'] ?? 'Unknown' }}</td>
                                             <td class="py-4">{{ $client['wifi_terminal_ip'] ?? '-' }}</td>
                                             <td class="py-4">{{ $client['wifi_terminal_mac'] ?? '-' }}</td>
-                                            <td class="py-4">{{ $client['wifi_terminal_speed'] ?? '-'}}</td>
-                                            <td class="py-4 flex items-center justify-center"><div class="h-3 w-3 rounded-full {{ $ap['state'] == 'online' ? 'bg-green-500' : 'bg-red-500' }}"></div></td>
+                                            <td class="py-4">{{ $client['wifi_terminal_speed'] ?? '-' }}</td>
+                                            <td class="py-4 flex items-center justify-center">
+                                                <div
+                                                    class="h-3 w-3 rounded-full {{ $ap['state'] == 'online' ? 'bg-green-500' : 'bg-red-500' }}">
+                                                </div>
+                                            </td>
                                         </tr>
                                     @endforeach
 
