@@ -1,11 +1,19 @@
 <x-app-layout>
+
+    @if (session('api_error'))
+        <div class="bg-red-600/20 border border-red-600 text-red-300 px-4 py-3 rounded-lg mb-4">
+            {{ session('api_error') }}
+        </div>
+    @endif
+
     <div class="flex-1 p-6 space-y-6">
 
         <!-- Header Metrics -->
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
 
             <!-- Total Alerts Today -->
-            <div class="bg-gradient-to-br from-blue-600 to-blue-800 rounded-xl p-6 shadow-xl hover:shadow-2xl hover:shadow-blue-500/20 transition-all duration-300 hover:scale-105">
+            <div
+                class="bg-gradient-to-br from-blue-600 to-blue-800 rounded-xl p-6 shadow-xl hover:shadow-2xl hover:shadow-blue-500/20 transition-all duration-300 hover:scale-105">
                 <p class="text-gray-300 text-sm">Total Alerts Today</p>
                 <p class="text-3xl font-bold text-white mt-2">
                     {{ $alertCount ?? 0 }}
@@ -13,7 +21,8 @@
             </div>
 
             <!-- Active Users -->
-            <div class="bg-gradient-to-br from-purple-600 to-purple-800 rounded-xl p-6 shadow-xl hover:shadow-2xl hover:shadow-purple-500/20 transition-all duration-300 hover:scale-105">
+            <div
+                class="bg-gradient-to-br from-purple-600 to-purple-800 rounded-xl p-6 shadow-xl hover:shadow-2xl hover:shadow-purple-500/20 transition-all duration-300 hover:scale-105">
                 <p class="text-gray-300 text-sm">Active Users</p>
                 <p class="text-3xl font-bold text-white mt-2">
                     {{ $activeUsers ?? 0 }}
@@ -21,7 +30,8 @@
             </div>
 
             <!-- Connected AP -->
-            <div class="bg-gradient-to-br from-emerald-600 to-emerald-800 rounded-xl p-6 shadow-xl hover:shadow-2xl hover:shadow-emerald-500/20 transition-all duration-300 hover:scale-105">
+            <div
+                class="bg-gradient-to-br from-emerald-600 to-emerald-800 rounded-xl p-6 shadow-xl hover:shadow-2xl hover:shadow-emerald-500/20 transition-all duration-300 hover:scale-105">
                 <p class="text-gray-300 text-sm">Connected AP</p>
                 <p class="text-3xl font-bold text-white mt-2">
                     {{ collect($aps)->count() }}
@@ -38,7 +48,12 @@
             </div>
 
             <div class="h-56 bg-gray-900/40 rounded-lg border border-gray-700 p-4 overflow-y-auto">
-
+                @if (session('api_error'))
+                    <div class="text-red-400 text-sm mb-3 flex items-center gap-2">
+                        <span class="w-2 h-2 rounded-full bg-red-500 animate-pulse"></span>
+                        <span>CMSnya error Wak{{ session('api_error') }}</span>
+                    </div>
+                @endif
                 {{-- ALERT: AP OFFLINE --}}
                 @foreach ($apOffline ?? [] as $ap)
                     <div class="text-red-400 text-sm mb-2 flex items-center gap-2">

@@ -2,15 +2,41 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Response;
+use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Support\Facades\Http;
 
 class ConnectedUsers extends Controller
 {
-    public function index(): Response
+    public function index()
     {
         try {
-            $aps = Http::timeout(10)->get(config('services.onu_api.url'))->json();
+            $responses = Http::pool(fn ($pool) => [
+                $pool->timeout(10)->get(config('services.onu_api.url')),
+            ]);
+
+            $response = $responses[0];
+
+            // ❌ HTTP error tapi koneksi berhasil
+            if (! $response->successful()) {
+
+                $status = $response->status();
+
+                if (in_array($status, [500, 502, 503, 504])) {
+                    $error = 'API bermasalah / tidak merespon';
+                } else {
+                    $error = 'Gagal mengambil data dari API';
+                }
+
+                return view('connectedUsers.connectUsers', [
+                    'aps' => [],
+                    'error' => $error,
+                ]);
+            }
+
+            /* ==========================================
+             | 3️⃣ NORMAL FLOW
+             ========================================== */
+            $aps = $response->json();
 
             foreach ($aps as &$ap) {
                 $clients = $ap['wifiClients'] ?? [];
@@ -22,13 +48,13 @@ class ConnectedUsers extends Controller
                 $ap['connected'] = $count5g + $count24 + $countUnknown;
             }
 
-            return response()->view('connectedUsers.connectUsers', compact('aps'));
+            return view('connectedUsers.connectUsers', compact('aps'));
 
-        } catch (\Exception $e) {
-            return response()->view('connectedUsers.connectUsers', [
+        } catch (ConnectionException $e) {
+            return view('connectedUsers.connectUsers', [
                 'aps' => [],
-                'error' => $e->getMessage()
-            ], 500);
+                'error' => 'Koneksi ke API timeout',
+            ]);
         }
     }
 }
