@@ -5,6 +5,22 @@
 
             <h1 class="text-white font-bold text-2xl mb-4">Connected Users</h1>
 
+            <form method="GET" class="mb-6 flex gap-3">
+                <input type="text" name="search" value="{{ request('search') }}" placeholder="Search SN / Model"
+                    class="px-4 py-2 rounded bg-gray-800 text-white w-64">
+
+                <select name="perPage" class="px-3 py-2 rounded bg-gray-800 text-white">
+                    @foreach ([5, 10, 20] as $n)
+                        <option value="{{ $n }}" @selected(request('perPage') == $n)>
+                            {{ $n }}
+                        </option>
+                    @endforeach
+                </select>
+
+                <button class="px-4 py-2 bg-blue-600 rounded text-white">
+                    Filter
+                </button>
+            </form>
             @if (!empty($error))
                 <div class="bg-red-500 text-white px-4 py-3 rounded-lg mb-6">
                     {{ $error }}
@@ -82,6 +98,10 @@
 
 
             </div>
+            <div class="mt-6">
+    {{ $aps->links() }}
+</div>
+
 
         </main>
 

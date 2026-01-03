@@ -2,57 +2,72 @@
 
 namespace App\Http\Controllers;
 
+use Illuminate\Http\Request;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Pagination\LengthAwarePaginator;
 
 class ConnectedUsers extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
         try {
-            $responses = Http::pool(fn ($pool) => [
-                $pool->timeout(10)->get(config('services.onu_api.url')),
-            ]);
+            $response = Http::timeout(10)->get(config('services.onu_api.url'));
 
-            $response = $responses[0];
-
-            // ❌ HTTP error tapi koneksi berhasil
             if (! $response->successful()) {
-
-                $status = $response->status();
-
-                if (in_array($status, [500, 502, 503, 504])) {
-                    $error = 'API bermasalah / tidak merespon';
-                } else {
-                    $error = 'Gagal mengambil data dari API';
-                }
-
                 return view('connectedUsers.connectUsers', [
-                    'aps' => [],
-                    'error' => $error,
+                    'aps' => collect([]),
+                    'error' => 'Gagal mengambil data dari API',
                 ]);
             }
 
-            /* ==========================================
-             | 3️⃣ NORMAL FLOW
-             ========================================== */
-            $aps = $response->json();
-
-            foreach ($aps as &$ap) {
+            $aps = collect($response->json())->map(function ($ap) {
                 $clients = $ap['wifiClients'] ?? [];
 
-                $count5g = isset($clients['5G']) ? count($clients['5G']) : 0;
-                $count24 = isset($clients['2_4G']) ? count($clients['2_4G']) : 0;
-                $countUnknown = isset($clients['unknown']) ? count($clients['unknown']) : 0;
+                $ap['connected'] =
+                    count($clients['5G'] ?? []) +
+                    count($clients['2_4G'] ?? []) +
+                    count($clients['unknown'] ?? []);
 
-                $ap['connected'] = $count5g + $count24 + $countUnknown;
+                return $ap;
+            });
+
+            /* =======================
+             | SEARCH
+             ======================= */
+            if ($search = $request->get('search')) {
+                $aps = $aps->filter(fn ($ap) =>
+                    str_contains(strtolower($ap['sn'] ?? ''), strtolower($search)) ||
+                    str_contains(strtolower($ap['model'] ?? ''), strtolower($search))
+                );
             }
 
-            return view('connectedUsers.connectUsers', compact('aps'));
+            /* =======================
+             | PAGINATION
+             ======================= */
+            $perPage = $request->get('perPage', 5);
+            $page = $request->get('page', 1);
 
-        } catch (ConnectionException $e) {
+            $aps = new LengthAwarePaginator(
+                $aps->forPage($page, $perPage),
+                $aps->count(),
+                $perPage,
+                $page,
+                [
+                    'path' => $request->url(),
+                    'query' => $request->query(),
+                ]
+            );
+
             return view('connectedUsers.connectUsers', [
-                'aps' => [],
+                'aps' => $aps,
+                'error' => null,
+                'search' => $search,
+            ]);
+
+        } catch (ConnectionException) {
+            return view('connectedUsers.connectUsers', [
+                'aps' => collect([]),
                 'error' => 'Koneksi ke API timeout',
             ]);
         }
