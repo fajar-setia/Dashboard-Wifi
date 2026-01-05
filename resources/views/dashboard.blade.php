@@ -56,9 +56,9 @@
 
                 <!-- Items Per Page -->
                 <div class="flex items-center space-x-2">
-                    <span class="text-gray-400 text-sm">Show:</span>
+                    <span class="text-gray-400 text-sm mb-2">Show:</span>
                     <select onchange="window.location.href = updateUrlParam('perPage', this.value)"
-                        class="bg-slate-700 border border-slate-600 text-gray-300 text-sm rounded-lg px-3 py-1.5 focus:ring-blue-500">
+                        class="bg-slate-700 border border-slate-600 text-black text-sm rounded-lg px-3 py-1.5 focus:ring-blue-500">
                         @foreach ([10, 25, 50, 100] as $n)
                             <option value="{{ $n }}" {{ request('perPage', 10) == $n ? 'selected' : '' }}>
                                 {{ $n }}
