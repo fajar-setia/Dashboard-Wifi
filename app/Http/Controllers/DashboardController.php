@@ -81,8 +81,7 @@ class DashboardController extends Controller
 
         $base = $base->merge($stats);            // hari ada → ditimpa
 
-        $labels = $base->keys()->map(fn ($d) => \Carbon\Carbon::parse($d)->locale('id')->shortDayName
-        );
+        $labels = $base->keys();  // kirim tanggal YYYY-MM-DD, bukan nama hari
         $data = $base->values();
 
         $dailyUsers = [

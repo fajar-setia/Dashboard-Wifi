@@ -235,9 +235,8 @@
             }
         });
 
-
         window.dailyUsersLabels = @json($dailyUsers['labels'] ?? []);
         window.dailyUsersData = @json($dailyUsers['data'] ?? []);
-    </script>
+        </script>
 
 </x-app-layout>

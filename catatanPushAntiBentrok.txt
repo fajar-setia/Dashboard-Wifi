@@ -19,8 +19,12 @@ git push origin <namaBranch>
 git switch main
 git pull origin main
 
-
-
+git stash
+git pull origin main
+git stash pop
+git add 
+git commit
+git push
 
 !!penting
 sudo crontab -e -u www-data #untuk schedule trigger laravel setiap menit
