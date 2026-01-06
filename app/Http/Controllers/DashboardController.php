@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use Google\Client as GoogleClient;
+use Google\Service\Sheets;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
@@ -11,18 +13,15 @@ class DashboardController extends Controller
 {
     public function index()
     {
-        // default
+        // ================= DEFAULT =================
         $onus = [];
         $connections = [];
         $totalAp = 0;
         $userOnline = 0;
         $totalUser = 0;
         $logActivity = collect();
-        $dailyUsers = [
-            'labels' => ['Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab', 'Min'],
-            'data' => [],
-        ];
 
+        // ================= API ONU =================
         try {
             $responseOnu = Http::timeout(5)->get('http://172.16.100.26:67/api/onu');
             if ($responseOnu->ok()) {
@@ -33,41 +32,33 @@ class DashboardController extends Controller
             $responseConn = Http::timeout(5)->get('http://172.16.100.26:67/api/onu/connect');
             if ($responseConn->ok()) {
                 $connections = $responseConn->json();
-                if (is_array($connections)) {
-                    foreach ($connections as $c) {
-                        if (! is_array($c) || ! isset($c['wifiClients']) || ! is_array($c['wifiClients'])) {
-                            continue;
-                        }
-                        $wifi = $c['wifiClients'];
-                        $userOnline += isset($wifi['5G']) ? count($wifi['5G']) : 0;
-                        $userOnline += isset($wifi['2_4G']) ? count($wifi['2_4G']) : 0;
-                        $userOnline += isset($wifi['unknown']) ? count($wifi['unknown']) : 0;
-                    }
+
+                foreach ($connections as $c) {
+                    $wifi = $c['wifiClients'] ?? [];
+                    $userOnline += count($wifi['5G'] ?? []);
+                    $userOnline += count($wifi['2_4G'] ?? []);
+                    $userOnline += count($wifi['unknown'] ?? []);
                 }
             }
         } catch (\Throwable $e) {
-            Log::error('DashboardController@index error: '.$e->getMessage());
-            // keep defaults so view still renders
+            Log::error('DashboardController@index API error: '.$e->getMessage());
         }
 
         $totalUser = $userOnline;
 
-        // simple logActivity from connections
-        if (is_array($connections)) {
-            foreach ($connections as $c) {
-                $sn = $c['sn'] ?? null;
-                $wifi = $c['wifiClients'] ?? [];
-                foreach ($wifi['unknown'] ?? [] as $client) {
-                    $logActivity->push((object) [
-                        'time' => now()->subMinutes(rand(1, 30)),
-                        'user' => $client['wifi_terminal_name'] ?? 'Unknown',
-                        'ap' => $sn,
-                        'action' => 'connected',
-                    ]);
-                }
+        // ================= LOG ACTIVITY =================
+        foreach ($connections as $c) {
+            foreach ($c['wifiClients']['unknown'] ?? [] as $client) {
+                $logActivity->push((object) [
+                    'time' => now()->subMinutes(rand(1, 30)),
+                    'user' => $client['wifi_terminal_name'] ?? 'Unknown',
+                    'ap' => $c['sn'] ?? null,
+                    'action' => 'connected',
+                ]);
             }
         }
 
+<<<<<<< Updated upstream
         // Mulai dari Senin minggu ini, tampilkan sampai hari ini, sisanya kosong sampai Minggu
         $today = now();
         $dayOfWeek = $today->dayOfWeek; // 0=Sunday, 1=Monday, ..., 6=Saturday
@@ -93,37 +84,61 @@ class DashboardController extends Controller
 
         $labels = $base->keys();  // kirim tanggal YYYY-MM-DD
         $data = $base->values();
+=======
+        // ================= CHART MINGGUAN (DB – STABIL) =================
+        $dayLabels = ['Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab', 'Min'];
 
+        $today = now();
+        $dayOfWeek = $today->dayOfWeek; // 0=Min, 1=Sen
+        $daysToMonday = ($dayOfWeek === 0) ? 6 : $dayOfWeek - 1;
+        $monday = $today->copy()->subDays($daysToMonday);
+
+        // init base 7 hari
+        $base = collect();
+        for ($i = 0; $i < 7; $i++) {
+            $base[$monday->copy()->addDays($i)->toDateString()] = 0;
+        }
+
+        // ambil dari DB
+        $stats = DB::table('daily_user_stats')
+            ->whereBetween('date', [
+                $monday->toDateString(),
+                $monday->copy()->addDays(6)->toDateString(),
+            ])
+            ->pluck('user_count', 'date');
+
+        // merge aman
+        $base = $base->merge($stats);
+>>>>>>> Stashed changes
+
+        // FINAL chart data (LABEL HARI)
         $dailyUsers = [
-            'labels' => $labels,
-            'data' => $data,
+            'labels' => $dayLabels,
+            'data'   => $base->values()->values(),
         ];
 
-        // ============== PAGINATION LOGIC ==============
-        // Flatten semua client devices
+        // ================= GOOGLE SHEET (TAMBAHAN DATA) =================
+        $sheetUsers = cache()->remember(
+            'sheet_users_location',
+            300,
+            fn () => $this->readSheet()
+        );
+
+        // ================= PAGINATION CLIENT =================
         $allClients = collect();
 
-        if (is_array($connections)) {
-            foreach ($connections as $c) {
-                if (! is_array($c) || ! isset($c['wifiClients']) || ! is_array($c['wifiClients'])) {
-                    continue;
-                }
+        foreach ($connections as $c) {
+            $wifi = $c['wifiClients'] ?? [];
+            $clients = array_merge(
+                $wifi['5G'] ?? [],
+                $wifi['2_4G'] ?? [],
+                $wifi['unknown'] ?? []
+            );
 
-                $wifiClients = $c['wifiClients'];
-
-                // Gabungkan semua band (5G, 2.4G, unknown)
-                $clients = array_merge(
-                    $wifiClients['5G'] ?? [],
-                    $wifiClients['2_4G'] ?? [],
-                    $wifiClients['unknown'] ?? []
-                );
-
-                // Tambahkan informasi AP jika ada
-                foreach ($clients as $client) {
-                    $client['ap_sn'] = $c['sn'] ?? null;
-                    $client['ap_name'] = $c['name'] ?? null;
-                    $allClients->push($client);
-                }
+            foreach ($clients as $client) {
+                $client['ap_sn'] = $c['sn'] ?? null;
+                $client['ap_name'] = $c['name'] ?? null;
+                $allClients->push($client);
             }
         }
 
@@ -141,13 +156,40 @@ class DashboardController extends Controller
             ]
         );
 
+        // ================= RETURN VIEW =================
         return view('dashboard', [
-            'totalUser' => $totalUser,
-            'totalAp' => $totalAp,
+            'totalUser'  => $totalUser,
+            'totalAp'    => $totalAp,
             'userOnline' => $userOnline,
-            'logActivity' => $logActivity,
-            'clients' => $clients,
+            'logActivity'=> $logActivity,
+            'clients'    => $clients,
             'dailyUsers' => $dailyUsers,
+            'sheetUsers' => $sheetUsers, // tambahan (lokasi / mapping nanti)
         ]);
+    }
+
+    // ================= GOOGLE CLIENT =================
+    private function getClient(): GoogleClient
+    {
+        $client = new GoogleClient();
+        $client->setApplicationName('Laravel Dashboard');
+        $client->setScopes([Sheets::SPREADSHEETS_READONLY]);
+        $client->setAuthConfig(config_path('google/service-accounts.json'));
+
+        return $client;
+    }
+
+    // ================= READ GOOGLE SHEET =================
+    private function readSheet(): array
+    {
+        $client = $this->getClient();
+        $service = new Sheets($client);
+
+        $spreadsheetId = config('services.google.sheet_id');
+        $range = 'Rapi1!B4:B15';
+
+        $response = $service->spreadsheets_values->get($spreadsheetId, $range);
+
+        return $response->getValues() ?? [];
     }
 }

@@ -38,5 +38,9 @@ return [
     'onu_api' => [
         'url' => env('ONU_API_URL', 'http://172.16.100.26:67/api/onu/connect'),
     ],
+    
+    'google' => [
+    'sheet_id' => env('GOOGLE_SHEET_ID'),
+    ],
 
 ];
