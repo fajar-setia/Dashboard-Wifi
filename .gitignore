@@ -22,3 +22,5 @@
 Homestead.json
 Homestead.yaml
 Thumbs.db
+/config/google/*.json
+config/google/service-accounts.json
