@@ -98,7 +98,15 @@
                                 </td>
 
                                 <td class="py-2">
-                                    -
+                                    <div class="font-semibold text-white">
+                                        {{ $d['lokasi'] ?? '-' }}
+                                    </div>
+
+                                    @if (!empty($d['kelurahan']) || !empty($d['kemantren']))
+                                        <div class="text-xs text-gray-400">
+                                            {{ $d['kelurahan'] ?? '-' }}, {{ $d['kemantren'] ?? '-' }}
+                                        </div>
+                                    @endif
                                 </td>
 
                                 <td class="py-2 flex items-center space-x-2">
