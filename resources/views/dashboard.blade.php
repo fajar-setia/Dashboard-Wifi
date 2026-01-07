@@ -54,77 +54,144 @@
             </div>
         </div>
 
-        <!-- Detail Table -->
-        <div class="bg-slate-800/50 backdrop-blur rounded-xl p-6 shadow-xl border border-slate-700/50 overflow-x-auto">
+        <!-- Rekap User Online Per Lokasi -->
+        <div class="bg-slate-800/50 backdrop-blur rounded-xl p-6 shadow-xl border border-slate-700/50">
 
-            <div class="flex justify-between items-center mb-6">
-                <h3 class="text-white font-semibold text-lg">Detail Perangkat Terhubung</h3>
+            <h3 class="text-white font-semibold text-lg mb-6">Rekap User Online Per Lokasi</h3>
 
-                <!-- Items Per Page -->
-                <div class="flex items-center space-x-2">
-                    <span class="text-gray-400 text-sm mb-2">Lihat:</span>
-                    <select onchange="window.location.href = updateUrlParam('perPage', this.value)"
-                        class="bg-slate-700 border border-slate-600 text-black text-sm rounded-lg px-3 py-1.5 focus:ring-blue-500">
-                        @foreach ([10, 25, 50, 100] as $n)
-                            <option value="{{ $n }}" {{ request('perPage', 10) == $n ? 'selected' : '' }}>
-                                {{ $n }}
-                            </option>
-                        @endforeach
-                    </select>
-                </div>
+            <div class="space-y-4">
+
+                @forelse ($locations as $locationData)
+                    <div class="grid grid-cols-10 gap-4">
+
+                        <!-- Box 30% - Lokasi -->
+                        <div class="col-span-3 bg-slate-700/50 p-4 rounded-lg text-white space-y-2 border border-slate-600/50">
+                            <p class="font-semibold text-lg text-blue-400">{{ $locationData['location'] }}</p>
+                            <div class="text-xs space-y-1 text-gray-300">
+                                <p><span class="text-gray-400">Kemantren:</span> {{ $locationData['kemantren'] }}</p>
+                                <p><span class="text-gray-400">Kelurahan:</span> {{ $locationData['kelurahan'] }}</p>
+                                <p><span class="text-gray-400">RT/RW:</span> {{ $locationData['rt'] }} / {{ $locationData['rw'] }}</p>
+                                <p><span class="text-gray-400">SN:</span> {{ $locationData['sn'] }}</p>
+                            </div>
+                            <div class="pt-2 border-t border-slate-600">
+                                <p class="text-sm text-gray-400">User Terhubung</p>
+                                <p class="text-2xl font-bold text-green-400">{{ $locationData['count'] }}</p>
+                            </div>
+                        </div>
+
+                        <!-- Box 70% - Detail Pengguna (tampilkan maksimal 5) -->
+                        <div class="col-span-7 bg-slate-700/50 p-4 rounded-lg text-white border border-slate-600/50 overflow-x-auto">
+
+                            <table class="w-full text-left text-gray-300 text-sm table-fixed">
+                                <thead class="border-b border-slate-600">
+                                    <tr>
+                                        <th class="pb-3 font-semibold text-gray-200 w-2/6">Nama Perangkat</th>
+                                        <th class="pb-3 font-semibold text-gray-200 w-2/6">Alamat IP</th>
+                                        <th class="pb-3 font-semibold text-gray-200 w-2/6">Alamat MAC</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (array_slice($locationData['clients'], 0, 5) as $client)
+                                        <tr class="border-b border-slate-600/30 hover:bg-slate-600/20 transition-colors duration-200">
+                                            <td class="py-3">{{ $client['wifi_terminal_name'] ?? 'Unknown' }}</td>
+                                            <td class="py-3">{{ $client['wifi_terminal_ip'] ?? '-' }}</td>
+                                            <td class="py-3 text-xs">{{ $client['wifi_terminal_mac'] ?? '-' }}</td>
+                                        </tr>
+                                    @endforeach
+                                </tbody>
+                            </table>
+
+                        </div>
+
+                    </div>
+                @empty
+                    <div class="py-8 text-center text-gray-400">
+                        Tidak Ada Perangkat Terhubung
+                    </div>
+                @endforelse
+
             </div>
 
-            <!-- Table -->
-            <div class="overflow-x-auto mb-6">
-                <table class="w-full text-left text-gray-300 text-sm">
-                    <thead class="border-b border-slate-700">
-                        <tr>
-                            <th class="pb-4">Nama Perangkat</th>
-                            <th class="pb-4">Alamat IP</th>
-                            <th class="pb-4">Alamat ONT</th>
-                            <th class="pb-4">Nama ONT</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @forelse ($clients as $client)
-                            <tr class="border-b border-slate-700/50 hover:bg-slate-700/30">
-         git status                       <td class="py-4">{{ $client['wifi_terminal_name'] ?? 'Unknown' }}</td>
-                                <td class="py-4">{{ $client['wifi_terminal_ip'] ?? '-' }}</td>
-                                <td class="py-4">{{ $client['wifi_terminal_mac'] ?? '-' }}</td>
-                                <td class="py-4">{{ $client['ap_name'] ?? '-' }}</td>
-                            </tr>
-                        @empty
-                            <tr>
-                                <td colspan="6" class="py-8 text-center text-gray-400">
-                                    Tidak Ada Perangkat terhubung
-                                </td>
-                            </tr>
-                        @endforelse
-                    </tbody>
-                </table>
-            </div>
-
-            <!-- Footer Pagination -->
-            @if ($clients->hasPages())
+            <!-- Footer Pagination (lokasi) -->
+            @if ($locations->hasPages())
                 <div
                     class="flex flex-col sm:flex-row items-center justify-between border-t border-slate-700 pt-6 gap-4">
 
                     <div class="text-sm text-gray-400">
                         Menampilkan
-                        <span class="font-medium">{{ $clients->firstItem() }}</span>
+                        <span class="font-medium">{{ $locations->firstItem() }}</span>
                         Ke
-                        <span class="font-medium">{{ $clients->lastItem() }}</span>
+                        <span class="font-medium">{{ $locations->lastItem() }}</span>
                         Dari
-                        <span class="font-medium">{{ $clients->total() }}</span>
-                        Total
+                        <span class="font-medium">{{ $locations->total() }}</span>
+                        Lokasi
                     </div>
 
                     <div>
-                        {{ $clients->onEachSide(2)->links('pagination::tailwind') }}
+                        {{ $locations->onEachSide(2)->links('pagination::tailwind') }}
                     </div>
 
                 </div>
             @endif
+        </div>
+
+        <!-- Rekap Mingguan & Bulanan Per Lokasi -->
+        <div class="bg-slate-800/50 backdrop-blur rounded-xl p-6 shadow-xl border border-slate-700/50">
+
+            <div class="flex flex-col lg:flex-row gap-6">
+
+                <!-- Kiri: Search & Filter -->
+                <div class="lg:w-1/4 space-y-4">
+                    <h3 class="text-white font-semibold text-lg">Filter</h3>
+
+                    <div>
+                        <label class="text-gray-300 text-sm block mb-2">Cari Lokasi</label>
+                        <input type="text" id="locationSearch" placeholder="Cari lokasi..."
+                            class="w-full px-3 py-2 rounded bg-slate-700 text-white text-sm border border-slate-600 focus:ring-blue-500">
+                    </div>
+
+                    <div>
+                        <label class="text-gray-300 text-sm block mb-2">Kemantren</label>
+                        <select id="kemantrenFilter" class="w-full px-3 py-2 rounded bg-slate-700 text-white text-sm border border-slate-600 focus:ring-blue-500">
+                            <option value="">Semua</option>
+                            @foreach ($kemantrenList as $km)
+                                <option value="{{ $km }}">{{ $km }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="text-gray-300 text-sm block mb-2">Bulan (Bulanan)</label>
+                        <select id="monthFilter" onchange="updateLocationChart()" class="w-full px-3 py-2 rounded bg-slate-700 text-white text-sm border border-slate-600 focus:ring-blue-500">
+                            @foreach ($months as $num => $name)
+                                <option value="{{ $num }}" {{ $num == $currentMonth ? 'selected' : '' }}>{{ $name }} {{ $currentYear }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+
+                    <button onclick="filterLocationChart()" class="w-full px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded text-white text-sm font-medium">
+                        Filter
+                    </button>
+                </div>
+
+                <!-- Kanan: Chart & Kontrol -->
+                <div class="lg:w-3/4 space-y-4">
+                    <div class="flex justify-between items-center">
+                        <h3 class="text-white font-semibold text-lg">Rekap Per Lokasi</h3>
+                        <div class="flex gap-2">
+                            <select id="chartPeriod" onchange="updateLocationChart()" class="px-3 py-1.5 bg-slate-700 border border-slate-600 text-gray-200 text-sm rounded-lg focus:ring-blue-500">
+                                <option value="weekly">Mingguan</option>
+                                <option value="monthly">Bulanan</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="bg-slate-700/50 rounded-lg p-4 border border-slate-600/50">
+                        <canvas id="locationChart" class="w-full" style="max-height: 300px;"></canvas>
+                    </div>
+                </div>
+
+            </div>
         </div>
 
     </div>
@@ -152,11 +219,17 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
     <script>
-        //
+        // Data untuk location chart - per hari mingguan
+        window.dayLabels = @json($dayLabels ?? []);
+        window.weeklyLocationByDay = @json($weeklyLocationByDay ?? []);
+        window.monthlyLocationData = @json($monthlyLocationData ?? []);
+        window.currentMonth = @json($currentMonth ?? 1);
+        window.currentYear = @json($currentYear ?? now()->year);
+
         function updateUrlParam(key, value) {
             const url = new URL(window.location.href);
             url.searchParams.set(key, value);
-            url.searchParams.set('page', 1); // Reset ke halaman 1 saat ganti perPage
+            url.searchParams.set('page', 1);
             return url.toString();
         }
 
@@ -165,12 +238,10 @@
             const paginationLinks = document.querySelectorAll('a[href*="page="]');
             paginationLinks.forEach(link => {
                 link.addEventListener('click', function(e) {
-                    // Simpan posisi scroll
                     sessionStorage.setItem('scrollPosition', window.scrollY);
                 });
             });
 
-            // Restore scroll position
             const savedPosition = sessionStorage.getItem('scrollPosition');
             if (savedPosition) {
                 window.scrollTo(0, parseInt(savedPosition));
@@ -178,9 +249,12 @@
             }
         });
 
-        //chart user
-        const userChart = document.getElementById('userChart').getContext('2d');
-        new Chart(userChart, {
+        // Chart user
+        document.addEventListener('DOMContentLoaded', function() {
+            const userChartEl = document.getElementById('userChart');
+            if (userChartEl) {
+                const userChart = userChartEl.getContext('2d');
+                new Chart(userChart, {
             type: 'bar',
             data: {
                 labels: ['User Terhubung'], // Label untuk sumbu X
@@ -224,7 +298,7 @@
                 },
                 plugins: {
                     legend: {
-                        display: false // Sembunyikan legend karena cuma 1 bar
+                        display: false
                     },
                     tooltip: {
                         callbacks: {
@@ -235,10 +309,14 @@
                     }
                 }
             }
+                });
+            }
         });
 
         window.dailyUsersLabels = @json($dailyUsers['labels'] ?? []);
         window.dailyUsersData = @json($dailyUsers['data'] ?? []);
-        </script>
+    </script>
+
+    <script src="{{ asset('js/location-chart.js') }}"></script>
 
 </x-app-layout>

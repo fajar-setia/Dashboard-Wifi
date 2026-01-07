@@ -13,8 +13,8 @@ class AccessPointController extends Controller
     {
         try {
             $responses = Http::pool(fn ($pool) => [
-                $pool->timeout(5)->get('http://172.16.100.26:67/api/onu'),
-                $pool->timeout(5)->get('http://172.16.100.26:67/api/onu/connect'),
+                $pool->timeout(5)->get('http://172.16.105.26:6767/api/onu'),
+                $pool->timeout(5)->get('http://172.16.105.26:6767/api/onu/connect'),
             ]);
 
             $resp0Ok = is_object($responses[0]) && method_exists($responses[0], 'successful') && $responses[0]->successful();
