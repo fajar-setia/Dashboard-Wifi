@@ -88,7 +88,7 @@
                     <tbody>
                         @forelse ($clients as $client)
                             <tr class="border-b border-slate-700/50 hover:bg-slate-700/30">
-                                <td class="py-4">{{ $client['wifi_terminal_name'] ?? 'Unknown' }}</td>
+         git status                       <td class="py-4">{{ $client['wifi_terminal_name'] ?? 'Unknown' }}</td>
                                 <td class="py-4">{{ $client['wifi_terminal_ip'] ?? '-' }}</td>
                                 <td class="py-4">{{ $client['wifi_terminal_mac'] ?? '-' }}</td>
                                 <td class="py-4">{{ $client['ap_name'] ?? '-' }}</td>
