@@ -26,6 +26,21 @@ git add
 git commit
 git push
 
+Khusus bento
+
+Update dari temen:
+
+git fetch upstream
+git rebase upstream/main
+
+
+Backup ke repo sendiri:
+
+git push origin main
+
+
+Kalau ditolak lagi → force-with-lease, titik.
+
 !!penting
 sudo crontab -e -u www-data #untuk schedule trigger laravel setiap menit
 kalo masih di local
