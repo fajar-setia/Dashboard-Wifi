@@ -6,15 +6,16 @@
 
     <!-- Logo Section & Toggle Button -->
     <div class="shrink-0 flex items-center justify-between p-6 border-b border-gray-700/50">
-        <a href="{{ route('dashboard') }}" :class="sidebarOpen ? 'block' : 'hidden'" class="transition-all duration-300 w-32 ">
-            <img src="{{ asset('images/logo.png') }}" alt="logo" srcset="">
+        <a href="{{ route('dashboard') }}" :class="sidebarOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'"
+            class="transition-opacity duration-300 w-32 block">
+            <img src="{{ asset('images/logo.png') }}" alt="logo" width="128" height="32">
         </a>
 
         <!-- Toggle Button - Hidden on mobile -->
         <button @click="sidebarOpen = !sidebarOpen"
             class="hidden lg:block text-gray-400 hover:text-white hover:bg-gray-800 p-2 rounded-lg transition-all duration-200 ml-auto">
-            <svg class="w-5 h-5 transition-transform duration-300" :class="sidebarOpen ? '' : 'rotate-180'" fill="none"
-                stroke="currentColor" viewBox="0 0 24 24">
+            <svg class="w-5 h-5 transition-transform duration-300" :class="sidebarOpen ? '' : 'rotate-180'"
+                fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                     d="M11 19l-7-7 7-7m8 14l-7-7 7-7" />
             </svg>
@@ -59,7 +60,8 @@
             </svg>
             <span :class="sidebarOpen ? 'inline' : 'hidden'" class="font-medium">{{ __('Daftar ONT') }}</span>
             <span x-show="!sidebarOpen"
-                class="absolute left-20 px-3 py-1.5 ml-6 text-xs font-semibold text-white bg-gray-900 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap shadow-xl border border-gray-700">Daftar ONT</span>
+                class="absolute left-20 px-3 py-1.5 ml-6 text-xs font-semibold text-white bg-gray-900 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap shadow-xl border border-gray-700">Daftar
+                ONT</span>
         </a>
 
         <!-- Connected Users -->
@@ -73,7 +75,8 @@
             </svg>
             <span :class="sidebarOpen ? 'inline' : 'hidden'" class="font-medium">{{ __('Pengguna Terhubung') }}</span>
             <span x-show="!sidebarOpen"
-                class="absolute left-20 px-3 py-1.5 ml-6 text-xs font-semibold text-white bg-gray-900 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap shadow-xl border border-gray-700">Pengguna Terhubung</span>
+                class="absolute left-20 px-3 py-1.5 ml-6 text-xs font-semibold text-white bg-gray-900 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap shadow-xl border border-gray-700">Pengguna
+                Terhubung</span>
         </a>
 
         <!-- Alert -->
