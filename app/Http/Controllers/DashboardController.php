@@ -67,7 +67,14 @@ class DashboardController extends Controller
         }
 
         /* ---------- Google-Sheet sebagai sumber utama chart ---------- */
-        $dayLabels  = ['Senin','Selasa','Rabu','Kamis','Jumat','Sabtu','Minggu'];
+        // Build ISO date labels for the current week (Mon...Sun)
+        $today = now();
+        $monday = $today->copy()->startOfWeek();
+        $weekDates = [];
+        for ($i = 0; $i < 7; $i++) {
+            $weekDates[] = $monday->copy()->addDays($i)->toDateString();
+        }
+
         $weeklyData = array_fill(0, 7, 0);
 
         $sheetRows  = cache()->remember('sheet_users_weekly', 300,
@@ -81,20 +88,17 @@ class DashboardController extends Controller
 
         /* fallback DB mingguan kalau Sheet kosong */
         if (array_sum($weeklyData) === 0) {
-            $today  = now();
-            $monday = $today->copy()->startOfWeek();
             $stats  = DB::table('daily_user_stats')
                         ->whereBetween('date', [$monday, $today])
                         ->pluck('user_count', 'date');
 
-            foreach ($dayLabels as $i => $day) {
-                $date = $monday->copy()->addDays($i)->toDateString();
-                $weeklyData[$i] = (int) ($stats[$date] ?? 0);
+            foreach ($weekDates as $i => $dateStr) {
+                $weeklyData[$i] = (int) ($stats[$dateStr] ?? 0);
             }
         }
 
         $dailyUsers = [
-            'labels' => $dayLabels,
+            'labels' => $weekDates,
             'data'   => $weeklyData,
         ];
 

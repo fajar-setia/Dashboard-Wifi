@@ -144,8 +144,8 @@ export function renderUserDailyChart(labels, data) {
         });
     }
 
-    // Initial render: if months exist, show most recent month by default, else weekly
-    if (months.length > 0) {
+    // Initial render: default to weekly unless there are multiple months present
+    if (months.length > 1) {
         // choose the most recent month (first in sorted months)
         const defaultMonth = months[0];
         if (controlEl) controlEl.value = defaultMonth;
