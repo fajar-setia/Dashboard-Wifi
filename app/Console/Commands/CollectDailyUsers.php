@@ -92,7 +92,9 @@ class CollectDailyUsers extends Command
     {
         $ontMap = cache()->remember('ont_map_paket_all', 600, fn() => $this->readOntMap());
 
+        $globalMacSet = [];  // Track unique MAC secara global
         $locationData = [];
+
         foreach ($connections as $c) {
             $sn = strtoupper(trim($c['sn'] ?? ''));
             $info = $ontMap[$sn] ?? null;
@@ -123,7 +125,12 @@ class CollectDailyUsers extends Command
                 $mac = strtoupper(trim($client['wifi_terminal_mac']));
                 $mac = preg_replace('/[^A-F0-9:]/i', '', $mac);
                 if ($mac === '') continue;
-                $locationData[$location]['users'][$mac] = true;
+
+                // Hanya catat jika MAC belum pernah tercatat di lokasi manapun
+                if (!isset($globalMacSet[$mac])) {
+                    $locationData[$location]['users'][$mac] = true;
+                    $globalMacSet[$mac] = $location;  // Tandai MAC sudah tercatat
+                }
             }
         }
 
