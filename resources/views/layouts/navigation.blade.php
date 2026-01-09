@@ -10,20 +10,11 @@
             class="transition-opacity duration-300 w-32 block">
             <img src="{{ asset('images/logo.png') }}" alt="logo" width="128" height="32">
         </a> --}}
-        <a href="{{ route('dashboard') }}"
-   :class="sidebarOpen ? 'scale-100' : 'scale-95'"
-   class="transition-transform duration-300 w-32 block"
->
-    <img
-        src="{{ asset('images/lifemedia.webp') }}"
-        alt="logo"
-        width="128"
-        height="32"
-        loading="eager"
-        fetchpriority="high"
-        decoding="async"
-    >
-</a>
+        <a href="{{ route('dashboard') }}" :class="sidebarOpen ? 'scale-100' : 'scale-95'"
+            class="transition-transform duration-300 w-32 block">
+            <img src="{{ asset('images/lifemedia.webp') }}" alt="logo" width="128" height="32" loading="eager"
+                fetchpriority="high" decoding="async">
+        </a>
 
 
         <!-- Toggle Button - Hidden on mobile -->

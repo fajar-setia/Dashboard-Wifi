@@ -1,1 +1,8 @@
-di dashboard total bandwidth itu masih pake dummy
+catatan kecil penting {
+    1. jadi diperlukan solusi untuk data yang besar (terutama pada bagian chart)
+    2. sekenario: jika ap yang masuk sebanyak 100 ap, 
+       kemudian terdapat pengguna perangkat +- sekitar 200, 
+       tidak mungkin chart akan menampilkan begitu banyak data yang harus ditampilkan,
+       jadi diperlukan solusi yang pasti untuk kasus ini
+    3. 
+}
