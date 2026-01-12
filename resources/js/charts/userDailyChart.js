@@ -37,9 +37,19 @@ function buildMonthOptionsFromLabels(labels) {
 function aggregateWeekly(labels, data) {
     const fixedLabels = ['Senin','Selasa','Rabu','Kamis','Jumat','Sabtu','Minggu'];
     const fixedData = Array(7).fill(0);
+
+    // Hanya ambil data untuk minggu berjalan (Senin..Minggu) berdasarkan tanggal hari ini
+    const today = new Date();
+    const monday = new Date(today);
+    monday.setDate(today.getDate() - ((today.getDay() + 6) % 7)); // Monday start
+    const sunday = new Date(monday);
+    sunday.setDate(monday.getDate() + 6); // Sunday end
+
     labels.forEach((lab, i) => {
         const d = tryParseDate(lab);
         if (d) {
+            // Skip jika tanggal di luar minggu berjalan
+            if (d < monday || d > sunday) return;
             // JS: Sunday=0, Monday=1 => map to Monday=0
             const idx = (d.getDay() + 6) % 7;
             fixedData[idx] += Number(data[i]) || 0;

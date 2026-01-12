@@ -86,14 +86,25 @@ class DashboardController extends Controller
             }
         }
 
-        /* fallback DB mingguan kalau Sheet kosong */
+        /* fallback DB mingguan kalau Sheet kosong - tetap ambil data minggu ini saja */
         if (array_sum($weeklyData) === 0) {
             $stats  = DB::table('daily_user_stats')
-                        ->whereBetween('date', [$monday, $today])
+                        ->whereBetween('date', [$monday->toDateString(), $today->toDateString()])
                         ->pluck('user_count', 'date');
 
             foreach ($weekDates as $i => $dateStr) {
                 $weeklyData[$i] = (int) ($stats[$dateStr] ?? 0);
+            }
+        }
+
+        // Jika masih 0, ambil semua data untuk ditampilkan (fallback untuk data minggu lalu)
+        if (array_sum($weeklyData) === 0) {
+            $allStats = DB::table('daily_user_stats')
+                        ->orderBy('date')
+                        ->pluck('user_count', 'date');
+            if (count($allStats) > 0) {
+                $weekDates = array_keys($allStats->toArray());
+                $weeklyData = array_values($allStats->toArray());
             }
         }
 
