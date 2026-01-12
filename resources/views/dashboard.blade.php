@@ -261,69 +261,80 @@
         });
 
         // Chart user
-        document.addEventListener('DOMContentLoaded', function() {
-            const userChartEl = document.getElementById('userChart');
-            if (userChartEl) {
-                const userChart = userChartEl.getContext('2d');
-                new Chart(userChart, {
-                    type: 'bar',
-                    data: {
-                        labels: ['User Terhubung'], // Label untuk sumbu X
-                        datasets: [{
-                            label: 'Online Users', // Nama dataset (muncul di legend)
-                            data: [@json($userOnline ?? 0)], // Hanya data connected user
-                            backgroundColor: '#3b82f6', // Biru cerah
-                            borderColor: '#1f2937', // Hitam/abu-abu tua
-                            borderWidth: 2,
-                            borderRadius: 8 // Opsional: sudut membulat
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        scales: {
-                            y: {
-                                beginAtZero: true,
-                                ticks: {
-                                    color: '#d1d5db',
-                                    stepSize: 1, // Agar skala naik per 1 unit (jika jumlah kecil)
-                                    font: {
-                                        size: 12
-                                    }
-                                },
-                                grid: {
-                                    color: 'rgba(255, 255, 255, 0.1)'
-                                }
-                            },
-                            x: {
-                                ticks: {
-                                    color: '#d1d5db',
-                                    font: {
-                                        size: 14
-                                    }
-                                },
-                                grid: {
-                                    display: false // Hilangkan grid di sumbu X
-                                }
-                            }
-                        },
-                        plugins: {
-                            legend: {
-                                display: false
-                            },
-                            tooltip: {
-                                callbacks: {
-                                    label: function(context) {
-                                        return `Connected: ${context.raw}`;
-                                    }
-                                }
-                            }
-                        }
-                    }
-                });
-            }
-        });
+document.addEventListener('DOMContentLoaded', () => {
+    const el = document.getElementById('userChart');
+    if (!el) return;
 
+    const ctx = el.getContext('2d');
+
+    const gradient = ctx.createLinearGradient(0, 0, 0, 200);
+    gradient.addColorStop(0, 'rgba(59,130,246,0.9)');
+    gradient.addColorStop(1, 'rgba(59,130,246,0.35)');
+
+    new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: ['User Terhubung'],
+            datasets: [{
+                label: 'Online Users',
+                data: [@json($userOnline ?? 0)],
+                backgroundColor: gradient,
+                borderColor: '#60a5fa',
+                borderWidth: 1.5,
+                borderRadius: 10,
+                barThickness: 60,
+                hoverBackgroundColor: '#2563eb'
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            animation: {
+                duration: 900,
+                easing: 'easeOutQuart'
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+			stepSize: 1,
+			precision: 0,
+			callback: value => Math.round(value),
+                        color: '#cbd5f5',
+                        padding: 4,
+                        font: { size: 11 }
+                    },
+                    grid: {
+                        color: 'rgba(148,163,184,0.08)',
+                        drawBorder: false
+                    }
+                },
+                x: {
+                    ticks: {
+                        color: '#94a3b8',
+                        font: { size: 12 }
+                    },
+                    grid: { display: false }
+                }
+            },
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    backgroundColor: '#020617',
+                    borderColor: '#1e293b',
+                    borderWidth: 1,
+                    titleColor: '#e5e7eb',
+                    bodyColor: '#93c5fd',
+                    padding: 10,
+                    displayColors: false,
+                    callbacks: {
+                        label: ctx => ` ${ctx.raw} users online`
+                    }
+                }
+            }
+        }
+    });
+});
         window.dailyUsersLabels = @json($dailyUsers['labels'] ?? []);
         window.dailyUsersData = @json($dailyUsers['data'] ?? []);
     </script>

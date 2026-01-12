@@ -81,6 +81,11 @@ function aggregateMonthlyByDay(labels, data, ym) {
 
 function renderChart(ctx, proc) {
     if (chartInstance) chartInstance.destroy();
+
+    const gradient = ctx.createLinearGradient(0, 0, 0, 220);
+    gradient.addColorStop(0, 'rgba(59,130,246,0.30)');
+    gradient.addColorStop(1, 'rgba(59,130,246,0.03)');
+
     chartInstance = new Chart(ctx, {
         type: 'line',
         data: {
@@ -88,29 +93,67 @@ function renderChart(ctx, proc) {
             datasets: [{
                 label: proc.title,
                 data: proc.data,
-                tension: 0.25,
-                borderColor: '#3b82f6',
-                backgroundColor: 'rgba(59,130,246,0.12)',
-                borderWidth: 2,
+                borderColor: '#60a5fa',
+                backgroundColor: gradient,
+                borderWidth: 2.5,
+                tension: 0.35,
                 fill: true,
+
+                // ✅ POINT STYLING
                 pointRadius: 3,
-                pointBackgroundColor: '#fff'
+                pointHoverRadius: 5,
+                pointBackgroundColor: '#020617',
+                pointBorderColor: '#60a5fa',
+                pointBorderWidth: 2,
+                pointHoverBorderWidth: 2
             }]
         },
         options: {
-            maintainAspectRatio: false,
             responsive: true,
+            maintainAspectRatio: false,
+            interaction: {
+                mode: 'index',
+                intersect: false
+            },
             scales: {
-                y: { beginAtZero: true, ticks: { color: '#d1d5db', stepSize: 1, font: { size: 12 } }, grid: { color: 'rgba(255,255,255,0.06)' } },
-                x: { ticks: { color: '#d1d5db', font: { size: 13 } }, grid: { display: false } }
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        color: '#cbd5f5',
+                        font: { size: 11 }
+                    },
+                    grid: {
+                        color: 'rgba(148,163,184,0.08)',
+                        drawBorder: false
+                    }
+                },
+                x: {
+                    ticks: {
+                        color: '#94a3b8',
+                        font: { size: 11 }
+                    },
+                    grid: { display: false }
+                }
             },
             plugins: {
                 legend: { display: false },
-                tooltip: { callbacks: { label: function(ctx) { return `Connected: ${ctx.raw}`; } } }
+                tooltip: {
+                    backgroundColor: '#020617',
+                    borderColor: '#1e293b',
+                    borderWidth: 1,
+                    titleColor: '#e5e7eb',
+                    bodyColor: '#93c5fd',
+                    padding: 10,
+                    displayColors: false,
+                    callbacks: {
+                        label: ctx => ` ${ctx.raw} users`
+                    }
+                }
             }
         }
     });
 }
+
 
 export function renderUserDailyChart(labels, data) {
     const el = document.getElementById('userChartDaily');
