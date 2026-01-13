@@ -120,6 +120,19 @@
                     <div class="bg-slate-700/50 rounded-lg p-4 border border-slate-600/50">
                         <canvas id="locationChart" class="w-full" style="max-height: 300px;"></canvas>
                     </div>
+
+                    <!-- Others modal -->
+                    <div id="othersModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/50">
+                        <div class="bg-slate-800 rounded-lg w-11/12 md:w-2/3 lg:w-1/2 p-4">
+                            <div class="flex justify-between items-center mb-3">
+                                <h4 class="text-white font-semibold">Detail: Lainnya</h4>
+                                <button onclick="hideOthersModal()" class="text-gray-300">Tutup</button>
+                            </div>
+                            <div id="othersList" class="text-sm text-gray-200 max-h-72 overflow-auto space-y-2">
+                                <!-- populated by JS -->
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
             </div>

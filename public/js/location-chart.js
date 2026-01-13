@@ -13,19 +13,26 @@ function updateLocationChart() {
     if (period === "weekly") {
         chartData = buildWeeklyChart();
     } else {
-        // For monthly, fetch server-side Top N first, then render when data is available
+        // For monthly, fetch a larger Top (client will slice Top N + aggregate Others), then render
         const month = parseInt(document.getElementById('monthFilter')?.value || window.currentMonth || (new Date().getMonth()+1), 10);
         const year = window.currentYear || new Date().getFullYear();
-        const top = parseInt(document.getElementById('topLimit')?.value || 10, 10);
+        const topLimit = parseInt(document.getElementById('topLimit')?.value || 10, 10);
         const kemantren = document.getElementById('kemantrenFilter')?.value || '';
         const search = document.getElementById('locationSearch')?.value || '';
 
-        fetchMonthlyData(month, year, top, kemantren, search);
-        return; // will re-render after fetch
-    }
+        // build a simple cache key so we don't repeatedly fetch the same params
+        const fetchKey = `${month}|${year}|${encodeURIComponent(kemantren)}|${encodeURIComponent(search)}|${topLimit}`;
 
-    console.log("Chart data:", chartData);
-    console.log("Period:", period);
+        // if we already fetched this combination, render directly
+        if (window._monthlyFetchedKey === fetchKey && Array.isArray(window.monthlyLocationData)) {
+            chartData = buildMonthlyChart();
+        } else {
+            // fetch more rows for drill-down; adjust `maxFetch` as appropriate for your dataset size
+            const maxFetch = 500;
+            fetchMonthlyData(month, year, maxFetch, kemantren, search, topLimit, fetchKey);
+            return; // will re-render after fetch
+        }
+    }
 
     // if (chartData.labels.length === 0) {
     //     console.warn("No chart data available");
@@ -81,7 +88,20 @@ function updateLocationChart() {
                         },
                     },
                 },
+                // enable click handling for drill-down
+                datalabels: false,
             },
+            onClick: function (evt, elements) {
+                if (!elements || elements.length === 0) return;
+                const el = elements[0];
+                const idx = el.index;
+                const label = this.data.labels[idx];
+                if (label === 'Lainnya' || label === 'Others') {
+                    // show modal with list
+                    const others = window._monthlyOthers || [];
+                    showOthersModal(others);
+                }
+            }
         },
     });
 }
@@ -162,11 +182,10 @@ function buildWeeklyChart() {
 }
 
 // Fetch monthly data from server for selected month/year
-function fetchMonthlyData(month, year) {
-    const top = parseInt(document.getElementById('topLimit')?.value || 10, 10);
-    const kemantren = encodeURIComponent(document.getElementById('kemantrenFilter')?.value || '');
-    const search = encodeURIComponent(document.getElementById('locationSearch')?.value || '');
-    const url = `/dashboard/monthly-location-data?month=${month}&year=${year}&top=${top}&kemantren=${kemantren}&search=${search}`;
+function fetchMonthlyData(month, year, top, kemantren, search, topLimitForDisplay, fetchKey) {
+    const kem = encodeURIComponent(kemantren || '');
+    const sch = encodeURIComponent(search || '');
+    const url = `/dashboard/monthly-location-data?month=${month}&year=${year}&top=${top}&kemantren=${kem}&search=${sch}`;
     fetch(url, { credentials: "same-origin" })
         .then((res) => {
             if (!res.ok) throw new Error("Network response was not ok");
@@ -175,6 +194,10 @@ function fetchMonthlyData(month, year) {
         .then((data) => {
             // set global and update chart
             window.monthlyLocationData = Array.isArray(data) ? data : [];
+            // store also topLimit for display logic
+            window._monthlyDisplayLimit = topLimitForDisplay || parseInt(document.getElementById('topLimit')?.value || 10, 10);
+            // store fetched key so we don't re-fetch unnecessarily
+            if (fetchKey) window._monthlyFetchedKey = fetchKey;
             updateLocationChart();
         })
         .catch((err) => {
@@ -188,26 +211,21 @@ function buildMonthlyChart() {
         .getElementById("locationSearch")
         .value.toLowerCase();
     const kemantren = document.getElementById("kemantrenFilter").value;
-    const topLimit = parseInt(
-        document.getElementById("topLimit")?.value || 10,
-        10
-    );
+    // Display limit (Top N) chosen by user; if _monthlyDisplayLimit set, prefer it
+    const topLimit = window._monthlyDisplayLimit || parseInt(document.getElementById("topLimit")?.value || 10, 10);
 
-    // Filter dulu
+    // Filter first
     const filtered = data.filter((d) => {
-        const matchSearch = d.location.toLowerCase().includes(search);
-        const matchKemantren = kemantren === "" || d.kemantren === kemantren;
+        const matchSearch = (d.location || '').toString().toLowerCase().includes(search);
+        const matchKemantren = kemantren === "" || (d.kemantren || '') === kemantren;
         return matchSearch && matchKemantren;
     });
 
     // Sort DESC by total
     filtered.sort((a, b) => (b.total || 0) - (a.total || 0));
 
-    // Ambil Top N
-    const topData = filtered.slice(0, topLimit);
-
-    // Kalau kosong, tetap render chart
-    if (topData.length === 0) {
+    // If nothing, show empty chart
+    if (filtered.length === 0) {
         return {
             labels: ["Tidak ada data"],
             datasets: [
@@ -220,13 +238,38 @@ function buildMonthlyChart() {
         };
     }
 
+    // Split into top N and others
+    const topData = filtered.slice(0, topLimit);
+    const others = filtered.slice(topLimit);
+    const othersTotal = others.reduce((s, it) => s + (it.total || 0), 0);
+
+    const labels = topData.map((d) => d.location);
+    const dataVals = topData.map((d) => d.total || 0);
+
+    if (othersTotal > 0) {
+        labels.push('Lainnya');
+        dataVals.push(othersTotal);
+        // store others for drill-down
+        window._monthlyOthers = others;
+    } else {
+        window._monthlyOthers = [];
+    }
+
+    // Generate colors: one color for top bars, darker for 'Lainnya'
+    const baseColor = 'rgba(59,130,246,0.8)';
+    const othersColor = 'rgba(107,114,128,0.9)';
+
+    // Build dataset with per-bar colors
+    const backgroundColors = topData.map((_, i) => generateColors(topData.length)[i] || baseColor);
+    if (othersTotal > 0) backgroundColors.push(othersColor);
+
     return {
-        labels: topData.map((d) => d.location),
+        labels: labels,
         datasets: [
             {
-                label: `Top ${topLimit} Lokasi Bulanan`,
-                data: topData.map((d) => d.total || 0),
-                backgroundColor: "rgba(59,130,246,0.7)",
+                label: `Top ${topLimit} Lokasi Bulanan (plus Others)`,
+                data: dataVals,
+                backgroundColor: backgroundColors,
                 borderRadius: 6,
             },
         ],
@@ -255,10 +298,6 @@ function generateColors(count) {
 
 // Initialize on page load
 document.addEventListener("DOMContentLoaded", function () {
-    console.log("Location chart JS loaded");
-    console.log("weeklyLocationByDay:", window.weeklyLocationByDay);
-    console.log("monthlyLocationData:", window.monthlyLocationData);
-    console.log("dayLabels:", window.dayLabels);
 
     if (
         (window.weeklyLocationByDay &&
@@ -292,3 +331,28 @@ document.addEventListener("DOMContentLoaded", function () {
         console.warn("Location data is empty or not available");
     }
 });
+
+// Modal helpers for Others drill-down
+function showOthersModal(list) {
+    const modal = document.getElementById('othersModal');
+    const container = document.getElementById('othersList');
+    container.innerHTML = '';
+    if (!Array.isArray(list) || list.length === 0) {
+        container.innerHTML = '<div class="text-gray-400">Tidak ada data</div>';
+    } else {
+        list.forEach(item => {
+            const el = document.createElement('div');
+            el.className = 'p-2 bg-slate-700/50 rounded';
+            el.innerHTML = `<div class="flex justify-between"><div class="font-medium">${(item.location||'Unknown')}</div><div class="text-sm text-gray-300">${item.total||0}</div></div><div class="text-xs text-gray-400">${item.kemantren||''}</div>`;
+            container.appendChild(el);
+        });
+    }
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+}
+
+function hideOthersModal() {
+    const modal = document.getElementById('othersModal');
+    modal.classList.add('hidden');
+    modal.classList.remove('flex');
+}

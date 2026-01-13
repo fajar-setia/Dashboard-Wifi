@@ -19,7 +19,16 @@
             border border-white/10
             shadow-xl shadow-black/50">
 
-            <img src="{{ asset('images/ilustratorMonitor.jpg') }}" alt="Ilustrasi monitor" loading="lazy" class="w-72 mb-6 rounded-lg">
+            <picture>
+                <source type="image/webp"
+                    srcset="{{ asset('images/ilustratorMonitor-400.webp') }} 400w, {{ asset('images/ilustratorMonitor-800.webp') }} 800w"
+                    sizes="(max-width: 640px) 200px, 400px">
+                <img src="{{ asset('images/ilustratorMonitor-400.jpg') }}"
+                    alt="Ilustrasi monitor"
+                    width="400" height="300"
+                    loading="lazy" decoding="async"
+                    class="w-72 mb-6 rounded-lg">
+            </picture>
 
             <div class="flex items-center justify-center">
                 <a href="{{ route('login') }}"
