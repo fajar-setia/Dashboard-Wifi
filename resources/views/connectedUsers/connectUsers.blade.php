@@ -33,11 +33,15 @@
                     <div class="grid grid-cols-10 gap-4">
 
                         <!-- Box 30% -->
-                        <div class="col-span-3 bg-gray-800 p-4 rounded-lg text-white space-y-1">
-                            <p class="font-semibold text-lg">{{ $ap['sn'] }}</p>
-                            <p class="text-sm text-gray-400">Model : {{ $ap['model'] }}</p>
-                            <p class="text-sm {{ $ap['state'] == 'online' ? 'text-green-400' : 'text-red-400' }}">
-                                {{ ucfirst($ap['state']) }}
+                        <div class="col-span-3 bg-gray-800 p-4 rounded-lg text-white space-y-2">
+                            <p class="font-semibold text-lg text-blue-400">{{ is_array($ap['location'] ?? null) ? implode(', ', $ap['location']) : ($ap['location'] ?? ($ap['sn'] ?? 'Unknown')) }}</p>
+                            <p class="text-sm text-gray-400">SN: <span class="font-medium text-gray-200">{{ $ap['sn'] ?? '-' }}</span></p>
+                            <p class="text-sm text-gray-400">Model: <span class="font-medium text-gray-200">{{ $ap['model'] ?? '-' }}</span></p>
+                            <p class="text-sm text-gray-400">Kemantren: <span class="font-medium text-gray-200">{{ is_array($ap['kemantren'] ?? null) ? implode(', ', $ap['kemantren']) : ($ap['kemantren'] ?? '-') }}</span></p>
+                            <p class="text-sm text-gray-400">Kelurahan: <span class="font-medium text-gray-200">{{ is_array($ap['kelurahan'] ?? null) ? implode(', ', $ap['kelurahan']) : ($ap['kelurahan'] ?? '-') }}</span></p>
+                            <p class="text-sm text-gray-400">RT/RW: <span class="font-medium text-gray-200">{{ $ap['rt'] ?? '-' }} / {{ $ap['rw'] ?? '-' }}</span></p>
+                            <p class="text-sm {{ ($ap['state'] ?? '') == 'online' ? 'text-green-400' : 'text-red-400' }}">
+                                {{ ucfirst($ap['state'] ?? 'unknown') }}
                             </p>
                         </div>
 

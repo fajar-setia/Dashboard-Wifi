@@ -42,21 +42,70 @@ class ConnectedUsers extends Controller
             $perPage = (int) $request->get('perPage', 5);
             $page = (int) $request->get('page', 1);
 
+            // Try to get ONT -> location map from cache (populated by DashboardController)
+            $ontMap = cache()->get('ont_map_paket_all', []);
+
             $start = max(0, ($page - 1) * $perPage);
             $collected = 0; // total matched items
             $pageItems = [];
 
             foreach ($raw as $ap) {
                 $clients = $ap['wifiClients'] ?? [];
+
+                // Attach mapping data if available
+                $rawSn = (string) ($ap['sn'] ?? '');
+                $snTrim = trim($rawSn);
+                $snKey1 = strtoupper($snTrim);
+                $snKey2 = preg_replace('/[^A-Z0-9]/', '', $snKey1); // remove non-alnum for fallback
+
+                $info = null;
+                if ($snKey1 && isset($ontMap[$snKey1])) {
+                    $info = $ontMap[$snKey1];
+                } elseif ($snKey2 && isset($ontMap[$snKey2])) {
+                    $info = $ontMap[$snKey2];
+                }
+
+                // normalize stored SN to cleaned form if possible
+                $ap['sn'] = $snKey1 !== '' ? $snKey1 : ($ap['sn'] ?? '');
+
+                // prefer mapping info, otherwise try API-provided fields; coerce to strings
+                $ap['location'] = is_array($info['location'] ?? null) ? implode(', ', $info['location']) : ($info['location'] ?? ($ap['location'] ?? '-'));
+                $ap['kemantren'] = is_array($info['kemantren'] ?? null) ? implode(', ', $info['kemantren']) : ($info['kemantren'] ?? ($ap['kemantren'] ?? '-'));
+                $ap['kelurahan'] = is_array($info['kelurahan'] ?? null) ? implode(', ', $info['kelurahan']) : ($info['kelurahan'] ?? ($ap['kelurahan'] ?? '-'));
+                $ap['rt'] = (string) ($info['rt'] ?? ($ap['rt'] ?? '-'));
+                $ap['rw'] = (string) ($info['rw'] ?? ($ap['rw'] ?? '-'));
+                $ap['ip'] = (string) ($info['ip'] ?? ($ap['ip'] ?? '-'));
+                $ap['pic'] = (string) ($info['pic'] ?? ($ap['pic'] ?? '-'));
+                $ap['coordinate'] = (string) ($info['coordinate'] ?? ($ap['coordinate'] ?? '-'));
+
                 $ap['connected'] =
                     count($clients['5G'] ?? []) +
                     count($clients['2_4G'] ?? []) +
                     count($clients['unknown'] ?? []);
 
-                // Apply search filter if provided
+                // Apply search filter if provided - support multi-term and include location fields
                 if ($search) {
-                    $hay = strtolower(($ap['sn'] ?? '') . ' ' . ($ap['model'] ?? ''));
-                    if (strpos($hay, strtolower($search)) === false) {
+                    $s = trim((string) $search);
+                    $terms = preg_split('/\s+/', strtolower($s));
+
+                    $hay = strtolower(
+                        ($ap['sn'] ?? '') . ' ' .
+                        ($ap['model'] ?? '') . ' ' .
+                        ($ap['location'] ?? '') . ' ' .
+                        ($ap['kemantren'] ?? '') . ' ' .
+                        ($ap['kelurahan'] ?? '')
+                    );
+
+                    $found = true;
+                    foreach ($terms as $t) {
+                        if ($t === '') continue;
+                        if (strpos($hay, $t) === false) {
+                            $found = false;
+                            break;
+                        }
+                    }
+
+                    if (! $found) {
                         continue;
                     }
                 }
