@@ -2,6 +2,10 @@
 
     <div class="space-y-6 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 min-h-screen p-6">
 
+	<h1 class="text-white text-3xl font-bold mb-4">
+    		Dashboard Overview
+	</h1>
+
         <!-- Summary Cards -->
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-6">
             <div

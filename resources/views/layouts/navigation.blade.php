@@ -10,14 +10,17 @@
             class="transition-opacity duration-300 w-32 block">
             <img src="{{ asset('images/logo.png') }}" alt="logo" width="128" height="32">
         </a> --}}
-        <a href="{{ route('dashboard') }}" :class="sidebarOpen ? 'scale-100' : 'scale-95'"
-            class="transition-transform duration-300 w-32 block">
-            <picture>
-                <source type="image/webp" srcset="{{ asset('images/lifemedia-128.webp') }} 128w, {{ asset('images/lifemedia-256.webp') }} 256w" sizes="(max-width: 640px) 128px, 256px">
-                <source type="image/jpeg" srcset="{{ asset('images/lifemedia-128.jpg') }} 128w, {{ asset('images/lifemedia-256.jpg') }} 256w" sizes="(max-width: 640px) 128px, 256px">
-                <img src="{{ asset('images/lifemedia-128.webp') }}" alt="logo" width="128" height="32" loading="eager" fetchpriority="high" decoding="async">
-            </picture>
-        </a>
+<a href="{{ route('dashboard') }}" class="w-32 block">
+    <img
+        src="{{ asset('images/lifemedia-128.webp') }}"
+        width="128"
+        height="32"
+        alt="logo"
+        loading="lazy"
+        fetchpriority="low"
+        decoding="async"
+    >
+</a>
 
 
         <!-- Toggle Button - Hidden on mobile -->
