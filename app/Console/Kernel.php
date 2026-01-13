@@ -12,7 +12,12 @@ class Kernel extends ConsoleKernel
      */
     protected function schedule(Schedule $schedule)
     {
-    }
+        // Run the daily user stats aggregation at midnight Asia/Jakarta
+        $schedule->command('stats:update-daily-users')
+            ->dailyAt('00:00')
+            ->timezone('Asia/Jakarta')
+            ->runInBackground();
+        }
 
     /**
      * Register the commands for the application.
