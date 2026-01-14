@@ -1,10 +1,25 @@
 catatan kecil penting {
+    //sudah selesai
     1. jadi diperlukan solusi untuk data yang besar (terutama pada bagian chart)
     2. sekenario: jika ap yang masuk sebanyak 100 ap, 
        kemudian terdapat pengguna perangkat +- sekitar 200, 
        tidak mungkin chart akan menampilkan begitu banyak data yang harus ditampilkan,
        jadi diperlukan solusi yang pasti untuk kasus ini
-    3. 
+    //sudah selesai
+
+    1. di bagian daftar ont masih load data dari pagination juga (
+        jadi dibutuh kan solusi untuk load data yang banyak
+    )
+    2. di bagian search tidak masih terdapat error ketika mencari, (
+        ketika mencari itu semua data yang ada di daftar ont itu hilang
+    )
+
+    //bagian pengguna terhubung
+    1. diperlukan solusi sama untuk load data agar tidak kebanyakan ketika data telah mencapai > 20 / yang lebih tinggi
+
+
+    //bagian alert
+    1. mungkin ada sedikit perbaikan di bagian alert (belum diketahui)
 }
 
 tgl 13-01-2026
@@ -13,3 +28,4 @@ update  modified:   app/Http/Controllers/ConnectedUsers.php
         modified:   public/js/location-chart.js
         modified:   resources/views/dashboard.blade.php
         modified:   resources/views/welcome.blade.php
+
