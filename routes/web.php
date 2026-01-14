@@ -22,6 +22,9 @@ Route::get('/dashboard', [DashboardController::class, 'index'])
 Route::get('/dashboard/monthly-location-data', [DashboardController::class, 'monthlyLocationData'])
     ->middleware(['auth','verified']);
 
+Route::get('/dashboard/monthly-user-data', [DashboardController::class, 'monthlyUserData'])
+    ->middleware(['auth','verified']);
+
 Route::get('/dashboard/location-clients', [DashboardController::class, 'locationClients'])
     ->middleware(['auth','verified']);
 

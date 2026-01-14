@@ -7,8 +7,6 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
-use Google\Client as GoogleClient;
-use Google\Service\Sheets;
 use Carbon\Carbon;
 
 class DashboardController extends Controller
@@ -47,17 +45,30 @@ class DashboardController extends Controller
 
             $totalAp = is_array($onus) ? count($onus) : 0;
 
+            // Hitung unique users berdasarkan MAC address untuk menghindari duplikasi
+            $uniqueMacSet = [];
             if (is_array($connections)) {
                 foreach ($connections as $c) {
                     if (!is_array($c) || !isset($c['wifiClients'])) {
                         continue;
                     }
                     $wifi = $c['wifiClients'];
-                    $userOnline += count($wifi['5G']    ?? []);
-                    $userOnline += count($wifi['2_4G'] ?? []);
-                    $userOnline += count($wifi['unknown'] ?? []);
+                    $allClients = array_merge(
+                        $wifi['5G']    ?? [],
+                        $wifi['2_4G'] ?? [],
+                        $wifi['unknown'] ?? []
+                    );
+                    
+                    foreach ($allClients as $client) {
+                        if (!isset($client['wifi_terminal_mac'])) continue;
+                        $mac = strtoupper(trim($client['wifi_terminal_mac']));
+                        $mac = preg_replace('/[^A-F0-9:]/i', '', $mac);
+                        if ($mac === '') continue;
+                        $uniqueMacSet[$mac] = true;
+                    }
                 }
             }
+            $userOnline = count($uniqueMacSet);
         } catch (\Throwable $e) {
             Log::error('DashboardController@index : '.$e->getMessage());
         }
@@ -86,29 +97,17 @@ class DashboardController extends Controller
             $weekDates[] = $monday->copy()->addDays($i)->toDateString();
         }
 
+        // Ambil data mingguan langsung dari DB
+        $stats  = DB::table('daily_user_stats')
+                    ->whereBetween('date', [$monday->toDateString(), $today->toDateString()])
+                    ->pluck('user_count', 'date');
+
         $weeklyData = array_fill(0, 7, 0);
-
-        $sheetRows  = cache()->remember('sheet_users_weekly', 300,
-                                        fn() => $this->readSheetWeekly());
-
-        foreach ($sheetRows as $idx => $row) {
-            if (isset($row[0]) && is_numeric($row[0])) {
-                $weeklyData[$idx] = (int) $row[0];
-            }
+        foreach ($weekDates as $i => $dateStr) {
+            $weeklyData[$i] = (int) ($stats[$dateStr] ?? 0);
         }
 
-        /* fallback DB mingguan kalau Sheet kosong - tetap ambil data minggu ini saja */
-        if (array_sum($weeklyData) === 0) {
-            $stats  = DB::table('daily_user_stats')
-                        ->whereBetween('date', [$monday->toDateString(), $today->toDateString()])
-                        ->pluck('user_count', 'date');
-
-            foreach ($weekDates as $i => $dateStr) {
-                $weeklyData[$i] = (int) ($stats[$dateStr] ?? 0);
-            }
-        }
-
-        // Jika masih 0, ambil semua data untuk ditampilkan (fallback untuk data minggu lalu)
+        // Jika minggu ini kosong, fallback ke seluruh data historis
         if (array_sum($weeklyData) === 0) {
             $allStats = DB::table('daily_user_stats')
                         ->orderBy('date')
@@ -130,6 +129,8 @@ class DashboardController extends Controller
 
         /* ---------- susun summary lokasi + preview clients (optimize memory) ---------- */
         $locationsMap = [];
+        $globalMacSet = [];  // Track unique MAC globally to prevent double counting
+        
         if (is_array($connections)) {
             foreach ($connections as $c) {
                 $sn   = strtoupper(trim($c['sn'] ?? ''));
@@ -151,10 +152,23 @@ class DashboardController extends Controller
                         'rw' => $info['rw'] ?? '-',
                         'clients_preview' => [],
                         'count' => 0,
+                        'unique_macs' => [],  // Track unique MACs per location
                     ];
                 }
 
                 foreach ($clients as $cl) {
+                    // Filter berdasarkan MAC untuk menghindari duplikasi
+                    $mac = strtoupper(trim($cl['wifi_terminal_mac'] ?? ''));
+                    $mac = preg_replace('/[^A-F0-9:]/i', '', $mac);
+                    
+                    // Skip jika MAC kosong atau sudah tercatat di lokasi manapun
+                    if ($mac === '' || isset($globalMacSet[$mac])) {
+                        continue;
+                    }
+                    
+                    // Tandai MAC sudah tercatat
+                    $globalMacSet[$mac] = true;
+                    $locationsMap[$sn]['unique_macs'][$mac] = true;
                     $locationsMap[$sn]['count']++;
 
                     if (count($locationsMap[$sn]['clients_preview']) < 5) {
@@ -371,81 +385,100 @@ class DashboardController extends Controller
         return response()->json(array_values($result));
     }
 
-    /* ---------- Google Client ---------- */
-    private function getClient(): GoogleClient
-    {
-        $client = new GoogleClient;
-        $client->setApplicationName('Laravel Dashboard');
-        $client->setScopes([Sheets::SPREADSHEETS_READONLY]);
-        $client->setAuthConfig(config_path('google/service-accounts.json'));
-        return $client;
-    }
-
-    /* ---------- Baca Sheet mingguan (7 baris) ---------- */
-    private function readSheetWeekly(): array
-    {
-        $service = new Sheets($this->getClient());
-        $id      = config('services.google.sheet_id');
-        $range   = 'Rapi1!B4:B10';   // 7 cell = SenMin
-        return $service->spreadsheets_values->get($id, $range)->getValues() ?? [];
-    }
-
-    /* ---------- Mapping SN -> lokasi (paket 110 & 200) ---------- */
+    /* ---------- Mapping SN -> lokasi (pakai CSV lokal ACSfiks.csv) ---------- */
     private function readOntMap(): array
     {
-        $service = new Sheets($this->getClient());
+        $path = public_path('storage/ACSfiks.csv');
+        if (!is_file($path)) {
+            Log::error('readOntMap: ACSfiks.csv not found at '.$path);
+            return [];
+        }
+
+        $handle = fopen($path, 'r');
+        if ($handle === false) {
+            Log::error('readOntMap: unable to open '.$path);
+            return [];
+        }
+
+        $header = fgetcsv($handle);
+        if ($header === false) {
+            fclose($handle);
+            return [];
+        }
+
+        $indexes = [];
+        foreach ($header as $idx => $name) {
+            $key = strtolower(trim(preg_replace('/\s+/', '_', $name)));
+            $indexes[$key] = $idx;
+        }
+
         $map = [];
+        $get = function (array $row, string $key) use ($indexes): string {
+            $idx = $indexes[$key] ?? null;
+            return $idx === null ? '' : trim($row[$idx] ?? '');
+        };
 
-        // Baca paket 110 dari sheet terpisah
-        $paket110_id = '1Wtkfylu-BbdIzvV7ZT_M7rEOg2ANBh5ylvea1sp37m8';
-        try {
-            $range = "'paket 110'!B2:I201";
-            $rows  = $service->spreadsheets_values->get($paket110_id, $range)->getValues() ?? [];
-            
-            foreach ($rows as $row) {
-                $sn = trim($row[7] ?? '');
-                if ($sn === '') continue;
-
-                $map[strtoupper($sn)] = [
-                    'location'   => trim($row[0] ?? ''),
-                    'kemantren'  => trim($row[1] ?? ''),
-                    'kelurahan'  => trim($row[2] ?? ''),
-                    'rt'         => trim($row[3] ?? ''),
-                    'rw'         => trim($row[4] ?? ''),
-                    'ip'         => trim($row[5] ?? ''),
-                    'pic'        => trim($row[6] ?? ''),
-                    'coordinate' => '',
-                ];
+        while (($row = fgetcsv($handle)) !== false) {
+            $sn = strtoupper($get($row, 'sn'));
+            if ($sn === '') {
+                continue;
             }
-        } catch (\Throwable $e) {
-            Log::error('readOntMap - paket 110: ' . $e->getMessage());
+
+            $map[$sn] = [
+                'location'   => $get($row, 'nama_lokasi'),
+                'kemantren'  => $get($row, 'kemantren'),
+                'kelurahan'  => $get($row, 'kelurahan'),
+                'rt'         => $get($row, 'rt'),
+                'rw'         => $get($row, 'rw'),
+                'ip'         => $get($row, 'ip'),
+                'pic'        => $get($row, 'pic'),
+                'coordinate' => $get($row, 'titik_koordinat'),
+            ];
         }
 
-        // Baca paket 200 dari sheet lama
-        try {
-            $id    = config('services.google.sheet_id');
-            $range = "'paket 200'!B2:I201";
-            $rows  = $service->spreadsheets_values->get($id, $range)->getValues() ?? [];
-
-            foreach ($rows as $row) {
-                $sn = trim($row[7] ?? '');
-                if ($sn === '') continue;
-
-                $map[strtoupper($sn)] = [
-                    'location'   => trim($row[0] ?? ''),
-                    'kemantren'  => trim($row[1] ?? ''),
-                    'kelurahan'  => trim($row[2] ?? ''),
-                    'rt'         => trim($row[3] ?? ''),
-                    'rw'         => trim($row[4] ?? ''),
-                    'ip'         => trim($row[5] ?? ''),
-                    'pic'        => trim($row[6] ?? ''),
-                    'coordinate' => trim($row[8] ?? '') ?? '',
-                ];
-            }
-        } catch (\Throwable $e) {
-            Log::error('readOntMap - paket 200: ' . $e->getMessage());
-        }
+        fclose($handle);
 
         return $map;
+    }
+
+    /**
+     * Return monthly user stats data as JSON for given month/year
+     */
+    public function monthlyUserData(Request $request)
+    {
+        $month = (int) $request->query('month', now()->month);
+        $year  = (int) $request->query('year', now()->year);
+
+        $start = Carbon::createFromDate($year, $month, 1)->toDateString();
+        $end   = Carbon::createFromDate($year, $month, 1)->endOfMonth()->toDateString();
+
+        $today = now()->toDateString();
+        if ($end > $today) {
+            $end = $today;
+        }
+
+        $cacheKey = sprintf('monthly_user_data_%d_%d', $year, $month);
+
+        $data = cache()->remember($cacheKey, 300, function () use ($start, $end) {
+            $stats = DB::table('daily_user_stats')
+                ->whereBetween('date', [$start, $end])
+                ->orderBy('date')
+                ->get();
+
+            $labels = [];
+            $values = [];
+
+            foreach ($stats as $stat) {
+                $labels[] = $stat->date;
+                $values[] = (int) $stat->user_count;
+            }
+
+            return [
+                'labels' => $labels,
+                'data' => $values,
+            ];
+        });
+
+        return response()->json($data);
     }
 }
