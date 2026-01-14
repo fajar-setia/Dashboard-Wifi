@@ -26,78 +26,62 @@ class AccessPointController extends Controller
 
     private function loadOntLocations(): \Illuminate\Support\Collection
     {
-        $url = 'https://docs.google.com/spreadsheets/d/1Ai-NoL0uNz-dQLu2DN0Wo7LA3b3j3wnB4I_OEAsJVNA/export?format=csv';
-        $csv = file_get_contents($url);
+        $candidates = [
+            storage_path('app/public/ACSfiks.csv'),
+            storage_path('app/ACSfiks.csv'),
+            public_path('storage/ACSfiks.csv'),
+            base_path('public/storage/ACSfiks.csv'),
+            base_path('storage/ACSfiks.csv'),
+        ];
 
-        $rows = array_map('str_getcsv', explode("\n", trim($csv)));
-
-        // Normalize header keys: trim, lowercase and replace spaces with underscores
-        $header = array_map(fn($h) => strtolower(trim(preg_replace('/\s+/', '_', $h))), array_shift($rows));
-        $headerCount = count($header);
-
-        // Normalize rows: remove empty lines and ensure same column count as header
-        $rows = array_filter($rows, fn ($r) => count(array_filter($r, fn($c) => $c !== null && $c !== '')) > 0);
-        $rows = array_map(function ($r) use ($header, $headerCount) {
-            if (count($r) < $headerCount) {
-                $r = array_pad($r, $headerCount, null);
-            } elseif (count($r) > $headerCount) {
-                $r = array_slice($r, 0, $headerCount);
+        $filePath = null;
+        foreach ($candidates as $p) {
+            if (file_exists($p)) {
+                $filePath = $p;
+                break;
             }
-            return array_combine($header, $r);
-        }, $rows);
+        }
 
-        try {
-            $response = \Illuminate\Support\Facades\Http::timeout(5)->get($url);
-
-            if (! $response->successful()) {
-                return collect();
-            }
-
-            $lines = array_filter(
-                array_map('trim', explode("\n", $response->body()))
-            );
-
-            if (count($lines) < 2) {
-                return collect();
-            }
-
-            // Normalize header keys: trim, lowercase and replace spaces with underscores
-            $header = array_map(fn($h) => strtolower(trim(preg_replace('/\s+/', '_', $h))), str_getcsv(array_shift($lines)));
-            $headerCount = count($header);
-
-            return collect($lines)
-                ->map(function ($line) use ($header, $headerCount) {
-
-                    $row = str_getcsv($line);
-
-                    // 🔥 SAMAKAN JUMLAH KOLOM
-                    if (count($row) < $headerCount) {
-                        $row = array_pad($row, $headerCount, null);
-                    }
-
-                    if (count($row) > $headerCount) {
-                        $row = array_slice($row, 0, $headerCount);
-                    }
-
-                    return array_combine($header, $row);
-                })
-                ->filter(fn ($row) => !empty($row['sn']))
-                ->mapWithKeys(function ($row) {
-                    // Use controller's normalizeSn to derive canonical SN key
-                    $sn = $this->normalizeSn($row['sn'] ?? null);
-
-                    return [
-                        $sn => [
-                            'lokasi' => $row['lokasi'] ?? null,
-                            'kemantren' => $row['kemantren'] ?? null,
-                            'kelurahan' => $row['kelurahan'] ?? null,
-                        ]
-                    ];
-                });
-
-        } catch (\Exception $e) {
+        if (! $filePath) {
             return collect();
         }
+
+        $lines = array_filter(array_map('trim', explode("\n", file_get_contents($filePath))));
+
+        if (count($lines) < 2) {
+            return collect();
+        }
+
+        // Normalize header keys: trim, lowercase and replace spaces with underscores
+        $header = array_map(fn($h) => strtolower(trim(preg_replace('/\s+/', '_', $h))), str_getcsv(array_shift($lines)));
+        $headerCount = count($header);
+
+        return collect($lines)
+            ->map(function ($line) use ($header, $headerCount) {
+                $row = str_getcsv($line);
+
+                if (count($row) < $headerCount) {
+                    $row = array_pad($row, $headerCount, null);
+                }
+
+                if (count($row) > $headerCount) {
+                    $row = array_slice($row, 0, $headerCount);
+                }
+
+                return array_combine($header, $row);
+            })
+            ->filter(fn ($row) => !empty($row['sn']))
+            ->mapWithKeys(function ($row) {
+                $sn = $this->normalizeSn($row['sn'] ?? null);
+
+                return [
+                    $sn => [
+                        'lokasi' => $row['lokasi'] ?? null,
+                        'kemantren' => $row['kemantren'] ?? null,
+                        'kelurahan' => $row['kelurahan'] ?? null,
+                    ]
+                ];
+            });
     }
 
     public function index(Request $request)
