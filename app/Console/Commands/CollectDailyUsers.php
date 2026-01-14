@@ -136,6 +136,12 @@ class CollectDailyUsers extends Command
 
         foreach ($locationData as $location => $data) {
             $count = count($data['users']);
+            
+            // Skip lokasi dengan user_count 0
+            if ($count === 0) {
+                continue;
+            }
+            
             DB::statement("
                 INSERT INTO daily_location_stats (date, location, kemantren, sn, user_count, created_at, updated_at)
                 VALUES (
