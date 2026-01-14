@@ -155,6 +155,20 @@ function renderChart(ctx, proc) {
 }
 
 
+// Fetch monthly user data via AJAX
+async function fetchMonthlyUserData(month, year) {
+    try {
+        const res = await fetch(`/dashboard/monthly-user-data?month=${month}&year=${year}`, {
+            credentials: 'same-origin'
+        });
+        if (!res.ok) throw new Error('Failed to fetch');
+        return await res.json();
+    } catch (e) {
+        console.error('Error fetching monthly user data:', e);
+        return { labels: [], data: [] };
+    }
+}
+
 export function renderUserDailyChart(labels, data) {
     const el = document.getElementById('userChartDaily');
     if (!el) {
@@ -175,7 +189,7 @@ export function renderUserDailyChart(labels, data) {
         controlEl.innerHTML = '';
         const optAll = document.createElement('option');
         optAll.value = 'weekly';
-        optAll.textContent = 'Weekly';
+        optAll.textContent = 'Mingguan';
         controlEl.appendChild(optAll);
 
         months.forEach(ym => {
@@ -185,13 +199,16 @@ export function renderUserDailyChart(labels, data) {
             controlEl.appendChild(o);
         });
 
-        controlEl.addEventListener('change', function() {
+        controlEl.addEventListener('change', async function() {
             const v = this.value;
             if (v === 'weekly') {
                 const proc = aggregateWeekly(labels, data);
                 renderChart(ctx, proc);
             } else {
-                const proc = aggregateMonthlyByDay(labels, data, v);
+                // Fetch monthly data from backend
+                const [y, m] = v.split('-').map(Number);
+                const monthData = await fetchMonthlyUserData(m, y);
+                const proc = aggregateMonthlyByDay(monthData.labels, monthData.data, v);
                 renderChart(ctx, proc);
             }
         });
