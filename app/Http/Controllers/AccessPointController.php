@@ -5,18 +5,21 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Collection;
 
 class AccessPointController extends Controller
 {
+    /* =========================
+     | UTILS
+     ========================= */
+
     private function normalizeSn(?string $sn): ?string
     {
-        if (! $sn) {
-            return null;
-        }
+        if (!$sn) return null;
 
         $sn = trim($sn);
-
         if (str_contains($sn, '-')) {
             $sn = trim(substr($sn, strrpos($sn, '-') + 1));
         }
@@ -24,189 +27,170 @@ class AccessPointController extends Controller
         return $sn;
     }
 
-    private function loadOntLocations(): \Illuminate\Support\Collection
-    {
-        $candidates = [
-            storage_path('app/public/ACSfiks.csv'),
-            storage_path('app/ACSfiks.csv'),
-            public_path('storage/ACSfiks.csv'),
-            base_path('public/storage/ACSfiks.csv'),
-            base_path('storage/ACSfiks.csv'),
-        ];
+    private function loadOntLocations(): Collection
+{
+    $paths = [
+        storage_path('app/public/ACSfiks.csv'),
+        storage_path('app/ACSfiks.csv'),
+        public_path('storage/ACSfiks.csv'),
+        base_path('storage/ACSfiks.csv'),
+    ];
 
-        $filePath = null;
-        foreach ($candidates as $p) {
-            if (file_exists($p)) {
-                $filePath = $p;
-                break;
+    $file = collect($paths)->first(fn ($p) => file_exists($p));
+    if (!$file) return collect();
+
+    $lines = array_filter(array_map('trim', file($file)));
+    if (count($lines) < 2) return collect();
+
+    $header = array_map(
+        fn ($h) => strtolower(str_replace(' ', '_', trim($h))),
+        str_getcsv(array_shift($lines))
+    );
+
+    $headerCount = count($header);
+
+    return collect($lines)
+        ->map(function ($line) use ($header, $headerCount) {
+            $row = str_getcsv($line);
+
+            // 🔥 INI KUNCI NYA
+            if (count($row) < $headerCount) {
+                $row = array_pad($row, $headerCount, null);
+            } elseif (count($row) > $headerCount) {
+                $row = array_slice($row, 0, $headerCount);
             }
-        }
 
-        if (! $filePath) {
-            return collect();
-        }
+            return array_combine($header, $row);
+        })
+        ->filter(fn ($r) => !empty($r['sn']))
+        ->mapWithKeys(function ($r) {
+            $sn = $this->normalizeSn($r['sn'] ?? null);
 
-        $lines = array_filter(array_map('trim', explode("\n", file_get_contents($filePath))));
+            return [
+                $sn => [
+                    'lokasi' => $r['lokasi'] ?? null,
+                    'kelurahan' => $r['kelurahan'] ?? null,
+                    'kemantren' => $r['kemantren'] ?? null,
+                ]
+            ];
+        });
+}
 
-        if (count($lines) < 2) {
-            return collect();
-        }
 
-        // Normalize header keys: trim, lowercase and replace spaces with underscores
-        $header = array_map(fn($h) => strtolower(trim(preg_replace('/\s+/', '_', $h))), str_getcsv(array_shift($lines)));
-        $headerCount = count($header);
-
-        return collect($lines)
-            ->map(function ($line) use ($header, $headerCount) {
-                $row = str_getcsv($line);
-
-                if (count($row) < $headerCount) {
-                    $row = array_pad($row, $headerCount, null);
-                }
-
-                if (count($row) > $headerCount) {
-                    $row = array_slice($row, 0, $headerCount);
-                }
-
-                return array_combine($header, $row);
-            })
-            ->filter(fn ($row) => !empty($row['sn']))
-            ->mapWithKeys(function ($row) {
-                $sn = $this->normalizeSn($row['sn'] ?? null);
-
-                return [
-                    $sn => [
-                        'lokasi' => $row['lokasi'] ?? null,
-                        'kemantren' => $row['kemantren'] ?? null,
-                        'kelurahan' => $row['kelurahan'] ?? null,
-                    ]
-                ];
-            });
-    }
+    /* =========================
+     | MAIN
+     ========================= */
 
     public function index(Request $request)
     {
         try {
-            $responses = Http::pool(fn ($pool) => [
-                $pool->timeout(5)->get('http://172.16.105.26:6767/api/onu'),
-                $pool->timeout(5)->get('http://172.16.105.26:6767/api/onu/connect'),
-            ]);
-
-            $resp0Ok = is_object($responses[0]) && method_exists($responses[0], 'successful') && $responses[0]->successful();
-            $resp1Ok = is_object($responses[1]) && method_exists($responses[1], 'successful') && $responses[1]->successful();
-
-            if (! $resp0Ok || ! $resp1Ok) {
-                $perPage = $request->get('perPage', 10);
-                $page = $request->get('page', 1);
-
-                $emptyPaginator = new LengthAwarePaginator(
-                    [],
-                    0,
-                    $perPage,
-                    $page,
-                    [
-                        'path' => $request->url(),
-                        'query' => $request->query(),
-                    ]
-                );
-
-                return view('accessPoint.accessPoint', [
-                    'devices' => $emptyPaginator,
-                    'error' => 'Gagal mengambil data dari API',
-                    'search' => $request->get('search'),
-                ]);
-            }
-        } catch (ConnectionException) {
-            $perPage = $request->get('perPage', 10);
-            $page = $request->get('page', 1);
-
-            $emptyPaginator = new LengthAwarePaginator(
-                [],
-                0,
-                $perPage,
-                $page,
-                [
-                    'path' => $request->url(),
-                    'query' => $request->query(),
-                ]
+            /* ========= CACHE API ========= */
+            $onuData = Cache::remember('onu_data', 10, fn () =>
+                Http::timeout(5)->get('http://172.16.105.26:6767/api/onu')->json()
             );
 
-            return view('accessPoint.accessPoint', [
-                'devices' => $emptyPaginator,
-                'error' => 'Koneksi ke API timeout',
-                'search' => $request->get('search'),
-            ]);
+            $connectData = Cache::remember('onu_connect', 10, fn () =>
+                collect(
+                    Http::timeout(5)->get('http://172.16.105.26:6767/api/onu/connect')->json()
+                )->mapWithKeys(fn ($i) => [
+                    $this->normalizeSn($i['sn'] ?? null) => $i
+                ])
+            );
+        } catch (ConnectionException) {
+            return $this->emptyView($request, 'Koneksi ke API timeout');
         }
 
-        $onuData = $responses[0]->json();
-        $connectData = collect($responses[1]->json())
-            ->mapWithKeys(fn ($item) => [
-                $this->normalizeSn($item['sn'] ?? null) => $item
-            ]);
-            
-        /* ================= MERGE ================= */
-        $locationData = $this -> loadOntLocations();
+        if (!is_array($onuData)) {
+            return $this->emptyView($request, 'Data API tidak valid');
+        }
 
-        $devices = collect($onuData)->map(function ($onu) use ($locationData, $connectData) {
+        /* ========= CACHE CSV ========= */
+        $locationData = Cache::remember(
+            'ont_locations',
+            now()->addHours(6),
+            fn () => $this->loadOntLocations()
+        );
 
-        $sn = $this->normalizeSn($onu['sn'] ?? null);
+        /* ========= MERGE DATA ========= */
+        $devices = collect($onuData)->map(function ($onu) use ($connectData, $locationData) {
+            $sn = $this->normalizeSn($onu['sn'] ?? null);
+            $connect = $connectData->get($sn, []);
+            $location = $locationData->get($sn, []);
 
-        $connect = $connectData->get($sn);
-        $location = $locationData->get($sn, []);
+            $userCount =
+                count($connect['wifiClients']['5G'] ?? []) +
+                count($connect['wifiClients']['2_4G'] ?? []) +
+                count($connect['wifiClients']['unknown'] ?? []);
 
-        return [
-            'sn' => $sn,
-            'model' => $onu['model'] ?? null,
-            'state' => strtolower($connect['state'] ?? $onu['state'] ?? 'offline'),
-            'lokasi' => (function ($location) {
-                    $parts = array_filter([
-                        $location['lokasi'] ?? null,
-                        $location['kelurahan'] ?? null,
-                        $location['kemantren'] ?? null,
-                    ], fn($v) => $v !== null && $v !== '');
+            return [
+                'sn' => $sn,
+                'model' => $onu['model'] ?? '-',
+                'state' => strtolower($connect['state'] ?? $onu['state'] ?? 'offline'),
+                'lokasi' => collect([
+                    $location['lokasi'] ?? null,
+                    $location['kelurahan'] ?? null,
+                    $location['kemantren'] ?? null,
+                ])->filter()->implode(' - ') ?: '-',
+                'wifi_user_count' => $userCount,
+                'wifiClients' => $connect['wifiClients'] ?? [],
+            ];
+        });
 
-                    return count($parts) ? implode(' - ', $parts) : '-';
-                })($location),
-
-            'wifiClients' => $connect['wifiClients'] ?? [
-                '5G' => [],
-                '2_4G' => [],
-                'unknown' => [],
-            ],
-        ];
-    });
-
-        /* =======================
-     | SEARCH
-     ======================= */
-        $search = $request->get('search');
-        if ($search) {
-            $devices = $devices->filter(fn ($d) => str_contains(strtolower($d['sn']), strtolower($search)) ||
+        /* ========= SEARCH ========= */
+        if ($search = $request->get('search')) {
+            $devices = $devices->filter(fn ($d) =>
+                str_contains(strtolower($d['sn']), strtolower($search)) ||
                 str_contains(strtolower($d['model']), strtolower($search))
             );
         }
 
-        /* =======================
-         | PAGINATION
-         ======================= */
-        $perPage = $request->get('perPage', 10);
-        $page = $request->get('page', 1);
+        /* ========= SUMMARY (SEBELUM PAGINATION) ========= */
+        $summary = [
+            'total' => $devices->count(),
+            'online' => $devices->where('state', 'online')->count(),
+            'offline' => $devices->where('state', '!=', 'online')->count(),
+            'users' => $devices->sum('wifi_user_count'),
+        ];
 
-        $devices = new LengthAwarePaginator(
-            $devices->forPage($page, $perPage),
+        /* ========= PAGINATION ========= */
+        $perPage = (int) $request->get('perPage', 10);
+        $page = (int) $request->get('page', 1);
+
+        $paginated = new LengthAwarePaginator(
+            $devices->forPage($page, $perPage)->values(),
             $devices->count(),
             $perPage,
             $page,
             [
-                'path' => request()->url(),
-                'query' => request()->query(),
+                'path' => $request->url(),
+                'query' => $request->query(),
             ]
         );
 
         return view('accessPoint.accessPoint', [
-            'devices' => $devices,
+            'devices' => $paginated,
+            'summary' => $summary,
             'error' => null,
             'search' => $search,
+        ]);
+    }
+
+    /* =========================
+     | EMPTY VIEW
+     ========================= */
+
+    private function emptyView(Request $request, string $error)
+    {
+        return view('accessPoint.accessPoint', [
+            'devices' => new LengthAwarePaginator([], 0, 10),
+            'summary' => [
+                'total' => 0,
+                'online' => 0,
+                'offline' => 0,
+                'users' => 0,
+            ],
+            'error' => $error,
+            'search' => $request->get('search'),
         ]);
     }
 }
