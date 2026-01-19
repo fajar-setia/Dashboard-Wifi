@@ -17,7 +17,8 @@ class AccessPointController extends Controller
 
     private function normalizeSn(?string $sn): ?string
     {
-        if (!$sn) return null;
+        if (!$sn)
+            return null;
 
         $sn = trim($sn);
         if (str_contains($sn, '-')) {
@@ -28,53 +29,55 @@ class AccessPointController extends Controller
     }
 
     private function loadOntLocations(): Collection
-{
-    $paths = [
-        storage_path('app/public/ACSfiks.csv'),
-        storage_path('app/ACSfiks.csv'),
-        public_path('storage/ACSfiks.csv'),
-        base_path('storage/ACSfiks.csv'),
-    ];
+    {
+        $paths = [
+            storage_path('app/public/ACSfiks.csv'),
+            storage_path('app/ACSfiks.csv'),
+            public_path('storage/ACSfiks.csv'),
+            base_path('storage/ACSfiks.csv'),
+        ];
 
-    $file = collect($paths)->first(fn ($p) => file_exists($p));
-    if (!$file) return collect();
+        $file = collect($paths)->first(fn($p) => file_exists($p));
+        if (!$file)
+            return collect();
 
-    $lines = array_filter(array_map('trim', file($file)));
-    if (count($lines) < 2) return collect();
+        $lines = array_filter(array_map('trim', file($file)));
+        if (count($lines) < 2)
+            return collect();
 
-    $header = array_map(
-        fn ($h) => strtolower(str_replace(' ', '_', trim($h))),
-        str_getcsv(array_shift($lines))
-    );
+        $header = array_map(
+            fn($h) => strtolower(str_replace(' ', '_', trim($h))),
+            str_getcsv(array_shift($lines))
+        );
 
-    $headerCount = count($header);
+        $headerCount = count($header);
 
-    return collect($lines)
-        ->map(function ($line) use ($header, $headerCount) {
-            $row = str_getcsv($line);
+        return collect($lines)
+            ->map(function ($line) use ($header, $headerCount) {
+                $row = str_getcsv($line);
 
-            // 🔥 INI KUNCI NYA
-            if (count($row) < $headerCount) {
-                $row = array_pad($row, $headerCount, null);
-            } elseif (count($row) > $headerCount) {
-                $row = array_slice($row, 0, $headerCount);
-            }
+                // 🔥 INI KUNCI NYA
+                if (count($row) < $headerCount) {
+                    $row = array_pad($row, $headerCount, null);
+                } elseif (count($row) > $headerCount) {
+                    $row = array_slice($row, 0, $headerCount);
+                }
 
-            return array_combine($header, $row);
-        })
-        ->filter(fn ($r) => !empty($r['sn']))
-        ->mapWithKeys(function ($r) {
-            $sn = $this->normalizeSn($r['sn'] ?? null);
+                return array_combine($header, $row);
+            })
+            ->filter(fn($r) => !empty($r['sn']))
+            ->mapWithKeys(function ($r) {
+                $sn = $this->normalizeSn($r['sn'] ?? null);
 
-            return [
-                $sn => [
-                    'lokasi' => $r['lokasi'] ?? null,
-                    'kelurahan' => $r['kelurahan'] ?? null,
-                    'kemantren' => $r['kemantren'] ?? null,
-                ]
-            ];
-        });
-}
+                return [
+                    $sn => [
+                        'lokasi' => $r['lokasi'] ?? null,
+                        'kelurahan' => $r['kelurahan'] ?? null,
+                        'kemantren' => $r['kemantren'] ?? null,
+                    ]
+                ];
+            });
+    }
 
 
     /* =========================
@@ -84,18 +87,16 @@ class AccessPointController extends Controller
     public function index(Request $request)
     {
         try {
-            /* ========= CACHE API ========= */
-            $onuData = Cache::remember('onu_data', 10, fn () =>
-                Http::timeout(5)->get('http://172.16.105.26:6767/api/onu')->json()
-            );
+            /* ========= Use OnuApiService (native PHP!) ========= */
+            $onuService = app(\App\Services\OnuApiService::class);
 
-            $connectData = Cache::remember('onu_connect', 10, fn () =>
-                collect(
-                    Http::timeout(5)->get('http://172.16.105.26:6767/api/onu/connect')->json()
-                )->mapWithKeys(fn ($i) => [
-                    $this->normalizeSn($i['sn'] ?? null) => $i
-                ])
-            );
+            $onuData = $onuService->getAllOnu();
+            $connections = $onuService->getAllOnuWithClients();
+
+            // Map connections by SN for easy lookup
+            $connectData = collect($connections)->mapWithKeys(fn($i) => [
+                $this->normalizeSn($i['sn'] ?? null) => $i
+            ]);
         } catch (ConnectionException) {
             return $this->emptyView($request, 'Koneksi ke API timeout');
         }
@@ -107,8 +108,8 @@ class AccessPointController extends Controller
         /* ========= CACHE CSV ========= */
         $locationData = Cache::remember(
             'ont_locations',
-            now()->addHours(6),
-            fn () => $this->loadOntLocations()
+            now()->addDay(),
+            fn() => $this->loadOntLocations()
         );
 
         /* ========= MERGE DATA ========= */
@@ -138,7 +139,8 @@ class AccessPointController extends Controller
 
         /* ========= SEARCH ========= */
         if ($search = $request->get('search')) {
-            $devices = $devices->filter(fn ($d) =>
+            $devices = $devices->filter(
+                fn($d) =>
                 str_contains(strtolower($d['sn']), strtolower($search)) ||
                 str_contains(strtolower($d['model']), strtolower($search))
             );

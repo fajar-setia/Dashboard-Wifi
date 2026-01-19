@@ -5,7 +5,8 @@
     "scripts": {
         "build": "vite build",
         "dev": "vite",
-        "images:build": "node ./scripts/resize-images.js"
+        "images:build": "node ./scripts/resize-images.js",
+        "start": "concurrently \"php artisan serve --host=0.0.0.0\" \"vite\" --names \"🐘 PHP,⚡ VITE\" --prefix-colors \"yellow,cyan\""
     },
     "devDependencies": {
         "@tailwindcss/forms": "^0.5.2",

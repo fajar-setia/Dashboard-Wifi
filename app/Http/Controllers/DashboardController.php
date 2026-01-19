@@ -14,34 +14,23 @@ class DashboardController extends Controller
     public function index()
     {
         /* ---------- default ---------- */
-        $onus        = [];
+        $onus = [];
         $connections = [];
-        $totalAp     = 0;
-        $userOnline  = 0;
-        $totalUser   = 0;
+        $totalAp = 0;
+        $userOnline = 0;
+        $totalUser = 0;
         $logActivity = collect();
 
-        /* ---------- hitung user & total AP (cached external API calls) ---------- */
+        /* ---------- Data dari OnuApiService (native PHP, no middleware!) ---------- */
         try {
-            $onus = cache()->remember('dashboard_api_onu', 5, function () {
-                try {
-                    $resp = Http::timeout(5)->get('http://172.16.105.26:6767/api/onu');
-                    return $resp->ok() ? ($resp->json() ?: []) : [];
-                } catch (\Throwable $e) {
-                    Log::warning('dashboard_api_onu fetch failed: '.$e->getMessage());
-                    return [];
-                }
-            });
+            $onuService = app(\App\Services\OnuApiService::class);
 
-            $connections = cache()->remember('dashboard_api_onu_connections', 5, function () {
-                try {
-                    $resp = Http::timeout(5)->get('http://172.16.105.26:6767/api/onu/connect');
-                    return $resp->ok() ? ($resp->json() ?: []) : [];
-                } catch (\Throwable $e) {
-                    Log::warning('dashboard_api_onu_connections fetch failed: '.$e->getMessage());
-                    return [];
-                }
-            });
+            // Get simple ONU list (cached 60s)
+            $onus = $onuService->getAllOnu();
+            $totalAp = count($onus);
+
+            // Get complete data with WiFi clients (cached 5 min)
+            $connections = $onuService->getAllOnuWithClients();
 
             $totalAp = is_array($onus) ? count($onus) : 0;
 
@@ -54,23 +43,25 @@ class DashboardController extends Controller
                     }
                     $wifi = $c['wifiClients'];
                     $allClients = array_merge(
-                        $wifi['5G']    ?? [],
+                        $wifi['5G'] ?? [],
                         $wifi['2_4G'] ?? [],
                         $wifi['unknown'] ?? []
                     );
-                    
+
                     foreach ($allClients as $client) {
-                        if (!isset($client['wifi_terminal_mac'])) continue;
+                        if (!isset($client['wifi_terminal_mac']))
+                            continue;
                         $mac = strtoupper(trim($client['wifi_terminal_mac']));
                         $mac = preg_replace('/[^A-F0-9:]/i', '', $mac);
-                        if ($mac === '') continue;
+                        if ($mac === '')
+                            continue;
                         $uniqueMacSet[$mac] = true;
                     }
                 }
             }
             $userOnline = count($uniqueMacSet);
         } catch (\Throwable $e) {
-            Log::error('DashboardController@index : '.$e->getMessage());
+            Log::error('DashboardController@index : ' . $e->getMessage());
         }
         $totalUser = $userOnline;
 
@@ -78,10 +69,10 @@ class DashboardController extends Controller
         if (is_array($connections)) {
             foreach ($connections as $c) {
                 foreach ($c['wifiClients']['unknown'] ?? [] as $cl) {
-                    $logActivity->push((object)[
-                        'time'   => now()->subMinutes(rand(1,30)),
-                        'user'   => $cl['wifi_terminal_name'] ?? 'Unknown',
-                        'ap'     => $c['sn'] ?? null,
+                    $logActivity->push((object) [
+                        'time' => now()->subMinutes(rand(1, 30)),
+                        'user' => $cl['wifi_terminal_name'] ?? 'Unknown',
+                        'ap' => $c['sn'] ?? null,
                         'action' => 'connected',
                     ]);
                 }
@@ -98,9 +89,9 @@ class DashboardController extends Controller
         }
 
         // Ambil data mingguan langsung dari DB
-        $stats  = DB::table('daily_user_stats')
-                    ->whereBetween('date', [$monday->toDateString(), $today->toDateString()])
-                    ->pluck('user_count', 'date');
+        $stats = DB::table('daily_user_stats')
+            ->whereBetween('date', [$monday->toDateString(), $today->toDateString()])
+            ->pluck('user_count', 'date');
 
         $weeklyData = array_fill(0, 7, 0);
         foreach ($weekDates as $i => $dateStr) {
@@ -110,8 +101,8 @@ class DashboardController extends Controller
         // Jika minggu ini kosong, fallback ke seluruh data historis
         if (array_sum($weeklyData) === 0) {
             $allStats = DB::table('daily_user_stats')
-                        ->orderBy('date')
-                        ->pluck('user_count', 'date');
+                ->orderBy('date')
+                ->pluck('user_count', 'date');
             if (count($allStats) > 0) {
                 $weekDates = array_keys($allStats->toArray());
                 $weeklyData = array_values($allStats->toArray());
@@ -120,25 +111,28 @@ class DashboardController extends Controller
 
         $dailyUsers = [
             'labels' => $weekDates,
-            'data'   => $weeklyData,
+            'data' => $weeklyData,
         ];
 
         /* ---------- baca Sheet paket 110 & 200 untuk mapping SN ---------- */
-        $ontMap = cache()->remember('ont_map_paket_all', 600,
-                                    fn() => $this->readOntMap());
+        $ontMap = cache()->remember(
+            'ont_map_paket_all',
+            86400,
+            fn() => $this->readOntMap()
+        );
 
         /* ---------- susun summary lokasi + preview clients (optimize memory) ---------- */
         $locationsMap = [];
         $globalMacSet = [];  // Track unique MAC globally to prevent double counting
-        
+
         if (is_array($connections)) {
             foreach ($connections as $c) {
-                $sn   = strtoupper(trim($c['sn'] ?? ''));
+                $sn = strtoupper(trim($c['sn'] ?? ''));
                 $info = $ontMap[$sn] ?? null;   // detail lokasi
 
                 $clients = array_merge(
-                    $c['wifiClients']['5G']    ?? [],
-                    $c['wifiClients']['2_4G']  ?? [],
+                    $c['wifiClients']['5G'] ?? [],
+                    $c['wifiClients']['2_4G'] ?? [],
                     $c['wifiClients']['unknown'] ?? []
                 );
 
@@ -160,12 +154,12 @@ class DashboardController extends Controller
                     // Filter berdasarkan MAC untuk menghindari duplikasi
                     $mac = strtoupper(trim($cl['wifi_terminal_mac'] ?? ''));
                     $mac = preg_replace('/[^A-F0-9:]/i', '', $mac);
-                    
+
                     // Skip jika MAC kosong atau sudah tercatat di lokasi manapun
                     if ($mac === '' || isset($globalMacSet[$mac])) {
                         continue;
                     }
-                    
+
                     // Tandai MAC sudah tercatat
                     $globalMacSet[$mac] = true;
                     $locationsMap[$sn]['unique_macs'][$mac] = true;
@@ -222,7 +216,7 @@ class DashboardController extends Controller
         // Data per hari (Senin-Minggu) untuk mingguan
         $dayLabels = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu', 'Minggu'];
         // Cache weekly per-day aggregated location stats for short period
-        $weeklyLocationByDay = cache()->remember(sprintf('weekly_location_by_day_%s', $monday->toDateString()), 120, function () use ($monday) {
+        $weeklyLocationByDay = cache()->remember(sprintf('weekly_location_by_day_%s', $monday->toDateString()), 600, function () use ($monday) {
             $result = [];
             for ($i = 0; $i < 7; $i++) {
                 $date = $monday->copy()->addDays($i);
@@ -245,7 +239,7 @@ class DashboardController extends Controller
         });
 
         // Aggregate untuk bulan ini (default current month)
-        $monthlyLocationData = cache()->remember(sprintf('monthly_location_data_%d_%d', $currentYear, $currentMonth), 300, function () use ($firstDayOfMonth, $today, $currentYear, $currentMonth) {
+        $monthlyLocationData = cache()->remember(sprintf('monthly_location_data_%d_%d', $currentYear, $currentMonth), 600, function () use ($firstDayOfMonth, $today, $currentYear, $currentMonth) {
             return DB::table('daily_location_stats')
                 ->whereYear('date', $currentYear)
                 ->whereMonth('date', $currentMonth)
@@ -262,15 +256,34 @@ class DashboardController extends Controller
 
         // Semua bulan untuk dropdown
         $months = [
-            1 => 'Januari', 2 => 'Februari', 3 => 'Maret', 4 => 'April',
-            5 => 'Mei', 6 => 'Juni', 7 => 'Juli', 8 => 'Agustus',
-            9 => 'September', 10 => 'Oktober', 11 => 'November', 12 => 'Desember'
+            1 => 'Januari',
+            2 => 'Februari',
+            3 => 'Maret',
+            4 => 'April',
+            5 => 'Mei',
+            6 => 'Juni',
+            7 => 'Juli',
+            8 => 'Agustus',
+            9 => 'September',
+            10 => 'Oktober',
+            11 => 'November',
+            12 => 'Desember'
         ];
 
         return view('dashboard', compact(
-            'totalUser','totalAp','userOnline','logActivity','clients','dailyUsers','locations',
-            'kemantrenList','monthlyLocationData','dayLabels','weeklyLocationByDay',
-            'months','currentMonth','currentYear'
+            'totalUser',
+            'totalAp',
+            'userOnline',
+            'logActivity',
+            'dailyUsers',
+            'locations',
+            'kemantrenList',
+            'monthlyLocationData',
+            'dayLabels',
+            'weeklyLocationByDay',
+            'months',
+            'currentMonth',
+            'currentYear'
         ));
     }
 
@@ -280,13 +293,13 @@ class DashboardController extends Controller
     public function monthlyLocationData(Request $request)
     {
         $month = (int) $request->query('month', now()->month);
-        $year  = (int) $request->query('year', now()->year);
-        $top   = (int) $request->query('top', 10);
+        $year = (int) $request->query('year', now()->year);
+        $top = (int) $request->query('top', 10);
         $kemantren = $request->query('kemantren', null);
         $search = $request->query('search', null);
 
         $start = Carbon::createFromDate($year, $month, 1)->toDateString();
-        $end   = Carbon::createFromDate($year, $month, 1)->endOfMonth()->toDateString();
+        $end = Carbon::createFromDate($year, $month, 1)->endOfMonth()->toDateString();
 
         $today = now()->toDateString();
         if ($end > $today) {
@@ -309,7 +322,7 @@ class DashboardController extends Controller
 
             // allow simple search on location
             if ($search) {
-                $query->havingRaw("LOWER(location) LIKE ?", ['%'.strtolower($search).'%']);
+                $query->havingRaw("LOWER(location) LIKE ?", ['%' . strtolower($search) . '%']);
             }
 
             $rows = $query->orderByDesc('total')->limit(max(1, $top))->get()
@@ -335,18 +348,9 @@ class DashboardController extends Controller
             return response()->json(['error' => 'sn required'], 400);
         }
 
-        // Try to get cached connections (same cache key as used in index)
-        $connections = cache()->get('dashboard_api_onu_connections', null);
-        if ($connections === null) {
-            try {
-                $resp = Http::timeout(5)->get('http://172.16.105.26:6767/api/onu/connect');
-                $connections = $resp->ok() ? ($resp->json() ?: []) : [];
-                cache()->put('dashboard_api_onu_connections', $connections, 5);
-            } catch (\Throwable $e) {
-                Log::warning('locationClients fetch failed: '.$e->getMessage());
-                $connections = [];
-            }
-        }
+        // Use OnuApiService
+        $onuService = app(\App\Services\OnuApiService::class);
+        $connections = $onuService->getAllOnuWithClients();
 
         $ontMap = cache()->remember('ont_map_paket_all', 600, fn() => $this->readOntMap());
 
@@ -364,8 +368,8 @@ class DashboardController extends Controller
         }
 
         $clients = array_merge(
-            $found['wifiClients']['5G']    ?? [],
-            $found['wifiClients']['2_4G']  ?? [],
+            $found['wifiClients']['5G'] ?? [],
+            $found['wifiClients']['2_4G'] ?? [],
             $found['wifiClients']['unknown'] ?? []
         );
 
@@ -390,13 +394,13 @@ class DashboardController extends Controller
     {
         $path = public_path('storage/ACSfiks.csv');
         if (!is_file($path)) {
-            Log::error('readOntMap: ACSfiks.csv not found at '.$path);
+            Log::error('readOntMap: ACSfiks.csv not found at ' . $path);
             return [];
         }
 
         $handle = fopen($path, 'r');
         if ($handle === false) {
-            Log::error('readOntMap: unable to open '.$path);
+            Log::error('readOntMap: unable to open ' . $path);
             return [];
         }
 
@@ -425,13 +429,13 @@ class DashboardController extends Controller
             }
 
             $map[$sn] = [
-                'location'   => $get($row, 'nama_lokasi'),
-                'kemantren'  => $get($row, 'kemantren'),
-                'kelurahan'  => $get($row, 'kelurahan'),
-                'rt'         => $get($row, 'rt'),
-                'rw'         => $get($row, 'rw'),
-                'ip'         => $get($row, 'ip'),
-                'pic'        => $get($row, 'pic'),
+                'location' => $get($row, 'nama_lokasi'),
+                'kemantren' => $get($row, 'kemantren'),
+                'kelurahan' => $get($row, 'kelurahan'),
+                'rt' => $get($row, 'rt'),
+                'rw' => $get($row, 'rw'),
+                'ip' => $get($row, 'ip'),
+                'pic' => $get($row, 'pic'),
                 'coordinate' => $get($row, 'titik_koordinat'),
             ];
         }
@@ -447,10 +451,10 @@ class DashboardController extends Controller
     public function monthlyUserData(Request $request)
     {
         $month = (int) $request->query('month', now()->month);
-        $year  = (int) $request->query('year', now()->year);
+        $year = (int) $request->query('year', now()->year);
 
         $start = Carbon::createFromDate($year, $month, 1)->toDateString();
-        $end   = Carbon::createFromDate($year, $month, 1)->endOfMonth()->toDateString();
+        $end = Carbon::createFromDate($year, $month, 1)->endOfMonth()->toDateString();
 
         $today = now()->toDateString();
         if ($end > $today) {
