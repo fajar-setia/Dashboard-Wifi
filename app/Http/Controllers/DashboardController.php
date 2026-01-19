@@ -89,9 +89,15 @@ class DashboardController extends Controller
         }
 
         // Ambil data mingguan langsung dari DB
+        $endOfWeek = $monday->copy()->endOfWeek();
+
         $stats = DB::table('daily_user_stats')
-            ->whereBetween('date', [$monday->toDateString(), $today->toDateString()])
+            ->whereBetween('date', [
+                $monday->toDateString(),
+                $endOfWeek->toDateString()
+            ])
             ->pluck('user_count', 'date');
+
 
         $weeklyData = array_fill(0, 7, 0);
         foreach ($weekDates as $i => $dateStr) {
@@ -99,18 +105,32 @@ class DashboardController extends Controller
         }
 
         // Jika minggu ini kosong, fallback ke seluruh data historis
-        if (array_sum($weeklyData) === 0) {
-            $allStats = DB::table('daily_user_stats')
-                ->orderBy('date')
-                ->pluck('user_count', 'date');
-            if (count($allStats) > 0) {
-                $weekDates = array_keys($allStats->toArray());
-                $weeklyData = array_values($allStats->toArray());
+        // if (array_sum($weeklyData) === 0) {
+        //     $allStats = DB::table('daily_user_stats')
+        //         ->orderBy('date')
+        //         ->pluck('user_count', 'date');
+        //     if (count($allStats) > 0) {
+        //         $weekDates = array_keys($allStats->toArray());
+        //         $weeklyData = array_values($allStats->toArray());
+        //     }
+        // }
+
+        // Convert ISO date labels to Indonesian weekday names for display,
+        // but keep raw dates for tooltip/context.
+        $dayNames = ['Minggu','Senin','Selasa','Rabu','Kamis','Jumat','Sabtu'];
+        $dailyLabels = [];
+        foreach ($weekDates as $d) {
+            try {
+                $dt = Carbon::parse($d);
+                $dailyLabels[] = $dayNames[$dt->dayOfWeek] ?? $d;
+            } catch (\Throwable $e) {
+                $dailyLabels[] = $d;
             }
         }
 
         $dailyUsers = [
-            'labels' => $weekDates,
+            'labels' => $dailyLabels,
+            'raw_labels' => $weekDates,
             'data' => $weeklyData,
         ];
 
@@ -235,8 +255,85 @@ class DashboardController extends Controller
 
                 $result[$date->toDateString()] = $rows;
             }
+
+            // If this week's aggregation is entirely empty, fallback to historical grouped data
+            $allEmpty = true;
+            foreach ($result as $rows) {
+                if (!empty($rows)) {
+                    $allEmpty = false;
+                    break;
+                }
+            }
+
+            if ($allEmpty) {
+                Log::info('weekly_location_by_day: current week empty, falling back to historical data');
+
+                // Build fallback: group all daily_location_stats by date -> rows
+                $all = DB::table('daily_location_stats')
+                    ->selectRaw('date, location, kemantren, SUM(user_count) as total')
+                    ->groupBy('date', 'location', 'kemantren')
+                    ->orderBy('date')
+                    ->get()
+                    ->groupBy('date')
+                    ->map(function ($group) {
+                        return $group->map(function ($r) {
+                            return [
+                                'location' => $r->location,
+                                'kemantren' => $r->kemantren,
+                                'total' => (int) $r->total,
+                            ];
+                        })->toArray();
+                    })->toArray();
+
+                if (!empty($all)) {
+                    return $all;
+                }
+            }
+
             return $result;
         });
+
+        // Ensure keys for the current week exist and are ordered Mon..Sun
+        try {
+            $expected = [];
+            for ($i = 0; $i < 7; $i++) {
+                $expected[] = $monday->copy()->addDays($i)->toDateString();
+            }
+
+            $ordered = [];
+            foreach ($expected as $d) {
+                $ordered[$d] = $weeklyLocationByDay[$d] ?? [];
+            }
+
+            $weeklyLocationByDay = $ordered;
+        } catch (\Throwable $e) {
+            Log::warning('failed to normalize weeklyLocationByDay keys: ' . $e->getMessage());
+        }
+
+        // Log summary to help debug empty chart issues
+        try {
+            $nonEmptyDays = 0;
+            $totalRows = 0;
+            $sample = [];
+            foreach ($weeklyLocationByDay as $date => $rows) {
+                if (!empty($rows)) {
+                    $nonEmptyDays++;
+                    $totalRows += count($rows);
+                    if (empty($sample)) {
+                        $sample = array_slice($rows, 0, 3);
+                    }
+                }
+            }
+
+            Log::info('weekly_location_by_day.summary', [
+                'monday' => $monday->toDateString(),
+                'non_empty_days' => $nonEmptyDays,
+                'total_rows' => $totalRows,
+                'sample' => $sample,
+            ]);
+        } catch (\Throwable $e) {
+            Log::warning('failed to log weekly_location_by_day summary: ' . $e->getMessage());
+        }
 
         // Aggregate untuk bulan ini (default current month)
         $monthlyLocationData = cache()->remember(sprintf('monthly_location_data_%d_%d', $currentYear, $currentMonth), 600, function () use ($firstDayOfMonth, $today, $currentYear, $currentMonth) {

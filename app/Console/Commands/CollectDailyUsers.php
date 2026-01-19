@@ -62,18 +62,17 @@ class CollectDailyUsers extends Command
                 INSERT INTO daily_user_stats (date, user_count, meta, updated_at)
                 VALUES (
                     CURRENT_DATE,
-                    {$currentCount},
-                    json_build_object(
-                        'sample_count', {$currentCount},
-                        'collected_at', now()
+                    ?,
+                    JSON_OBJECT(
+                        'sample_count', ?,
+                        'collected_at', NOW()
                     ),
-                    now()
+                    NOW()
                 )
-                ON CONFLICT (date)
-                DO UPDATE SET
-                    user_count = GREATEST(daily_user_stats.user_count, EXCLUDED.user_count),
-                    updated_at = now()
-            ");
+                ON DUPLICATE KEY UPDATE
+                    user_count = GREATEST(user_count, VALUES(user_count)),
+                    updated_at = NOW()
+            ", [$currentCount, $currentCount]);
 
             // SIMPAN PER LOKASI
             $this->savePerLocation($connections);
@@ -135,30 +134,34 @@ class CollectDailyUsers extends Command
         }
 
         foreach ($locationData as $location => $data) {
-            $count = count($data['users']);
-            
-            // Skip lokasi dengan user_count 0
-            if ($count === 0) {
-                continue;
-            }
-            
-            DB::statement("
-                INSERT INTO daily_location_stats (date, location, kemantren, sn, user_count, created_at, updated_at)
-                VALUES (
-                    CURRENT_DATE,
-                    ?,
-                    ?,
-                    ?,
-                    {$count},
-                    now(),
-                    now()
-                )
-                ON CONFLICT (date, location, sn)
-                DO UPDATE SET
-                    user_count = GREATEST(daily_location_stats.user_count, EXCLUDED.user_count),
-                    updated_at = now()
-            ", [$location, $data['kemantren'], $data['sn']]);
+        $count = count($data['users']);
+
+        if ($count === 0) {
+            continue;
         }
+
+        DB::statement("
+            INSERT INTO daily_location_stats
+                (date, location, kemantren, sn, user_count, created_at, updated_at)
+            VALUES (
+                CURRENT_DATE,
+                ?,
+                ?,
+                ?,
+                ?,
+                NOW(),
+                NOW()
+            )
+            ON DUPLICATE KEY UPDATE
+                user_count = GREATEST(user_count, VALUES(user_count)),
+                updated_at = NOW()
+        ", [
+            $location,
+            $data['kemantren'],
+            $data['sn'],
+            $count
+        ]);
+    }
     }
 
     private function readOntMap(): array

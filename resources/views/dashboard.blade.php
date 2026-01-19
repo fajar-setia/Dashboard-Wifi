@@ -365,8 +365,71 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 });
         window.dailyUsersLabels = @json($dailyUsers['labels'] ?? []);
+        window.dailyUsersRawLabels = @json($dailyUsers['raw_labels'] ?? []);
         window.dailyUsersData = @json($dailyUsers['data'] ?? []);
     </script>
+
+    <script>
+        // Render daily users chart (weekly/monthly labels provided by controller)
+        document.addEventListener('DOMContentLoaded', () => {
+            const el = document.getElementById('userChartDaily');
+            if (!el) return;
+
+            const ctx = el.getContext('2d');
+
+            const gradient = ctx.createLinearGradient(0, 0, 0, 200);
+            gradient.addColorStop(0, 'rgba(59,130,246,0.9)');
+            gradient.addColorStop(1, 'rgba(59,130,246,0.2)');
+
+            const displayLabels = Array.isArray(window.dailyUsersLabels) ? window.dailyUsersLabels : [];
+            const rawLabels = Array.isArray(window.dailyUsersRawLabels) ? window.dailyUsersRawLabels : [];
+            const dataNums = Array.isArray(window.dailyUsersData) ? window.dailyUsersData.map(v => Number(v || 0)) : [];
+
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: displayLabels,
+                    datasets: [{
+                        label: 'Total Users',
+                        data: dataNums,
+                        fill: true,
+                        backgroundColor: gradient,
+                        borderColor: '#60a5fa',
+                        tension: 0.35,
+                        pointRadius: 3,
+                        borderWidth: 2,
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: { beginAtZero: true, ticks: { stepSize: 1, precision: 0 } },
+                        x: { ticks: { color: '#cbd5f5' } }
+                    },
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                title: function(items) {
+                                    if (!items || !items.length) return '';
+                                    const idx = items[0].dataIndex;
+                                    return rawLabels[idx] || '';
+                                },
+                                label: function(context) {
+                                    const v = (context.parsed && typeof context.parsed.y !== 'undefined') ? context.parsed.y : (context.raw ?? context.formattedValue ?? 0);
+                                    return `${v} users`;
+                                }
+                            }
+                        }
+                    },
+                    interaction: { mode: 'index', intersect: false }
+                }
+            });
+        });
+    </script>
+
+    
 
     <script src="{{ asset('js/location-chart.js') }}" defer></script>
 
