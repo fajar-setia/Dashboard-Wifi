@@ -35,7 +35,7 @@
         <div class="grid gap-4 lg:grid-cols-3 rounded-xl">
             <!-- KIRI -->
             <div
-                class="lg:col-span-1 bg-slate-800/50 backdrop-blur rounded-xl p-4 border border-slate-700/50 flex flex-col  shadow-xl shadow-black/20">
+                class="lg:col-span-1 bg-slate-800/50 backdrop-blur rounded-xl p-4 border border-slate-700/50 flex flex-col shadow-xl shadow-black/20">
                 <p class="text-white font-semibold mb-3 text-center">Kapasitas User</p>
                 <div class="relative w-full h-56">
                     <canvas id="userChart" class="absolute inset-0 h-full block"></canvas>
@@ -44,16 +44,28 @@
 
             <!-- KANAN -->
             <div
-                class="lg:col-span-2 bg-slate-800/50 backdrop-blur rounded-xl p-4 border border-slate-700/50 flex flex-col  shadow-xl shadow-black/20">
+                class="lg:col-span-2 bg-slate-800/50 backdrop-blur rounded-xl p-4 border border-slate-700/50 flex flex-col shadow-xl shadow-black/20">
                 <h3 class="text-white font-semibold mb-3">Rekap Total User</h3>
-                <div id="userChartDailyControls" class="flex justify-end items-center mb-3">
-                    <select id="userChartDailyMonth"
-                        class="bg-slate-700 border border-slate-600 text-gray-200 text-sm rounded-lg px-3 py-1.5 focus:ring-blue-500">
-                        <option value="weekly">Mingguan</option>
-                    </select>
-                </div>
-                <div class="w-full h-56">
-                    <canvas id="userChartDaily" class=" h-full"></canvas>
+                <div id="userChartDailyControls" class="flex justify-end items-center gap-2 mb-3 pointer-events-auto relative z-10">
+                <!-- Mode -->
+                <select id="userChartMode"
+                    class="bg-slate-700 border border-slate-600 text-gray-200 text-sm rounded-lg px-3 py-1.5 cursor-pointer">
+                    <option value="weekly">Mingguan</option>
+                    <option value="monthly">Bulanan</option>
+                </select>
+
+                <!-- Tahun -->
+                <select id="userChartYearFilter"
+                    class="hidden bg-slate-700 border border-slate-600 text-gray-200 text-sm rounded-lg px-3 py-1.5 cursor-pointer">
+                </select>
+
+                <!-- Bulan -->
+                <select id="userChartMonthFilter"
+                    class="hidden bg-slate-700 border border-slate-600 text-gray-200 text-sm rounded-lg px-3 py-1.5 cursor-pointer">
+                </select>
+            </div>
+                <div class="w-full h-56 relative">
+                    <canvas id="userChartDaily" class="h-full block"></canvas>
                 </div>
             </div>
         </div>
@@ -84,17 +96,6 @@
                         </select>
                     </div>
 
-                    <div>
-                        <label class="text-gray-300 text-sm block mb-2">Bulan (Bulanan)</label>
-                        <select id="monthFilter" onchange="updateLocationChart()"
-                            class="w-full px-3 py-2 rounded bg-slate-700 text-white text-sm border border-slate-600 focus:ring-blue-500">
-                            @foreach ($months as $num => $name)
-                                <option value="{{ $num }}" {{ $num == $currentMonth ? 'selected' : '' }}>
-                                    {{ $name }} {{ $currentYear }}</option>
-                            @endforeach
-                        </select>
-                    </div>
-
                     <button onclick="filterLocationChart()"
                         class="w-full px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded text-white text-sm font-medium">
                         Filter
@@ -110,6 +111,20 @@
                                 class="px-3 py-1.5 bg-slate-700 border border-slate-600 text-gray-200 text-sm rounded-lg focus:ring-blue-500">
                                 <option value="weekly">Mingguan</option>
                                 <option value="monthly">Bulanan</option>
+                            </select>
+                            <select id="locationYearFilter"
+                                class="px-3 py-1.5 bg-slate-700 border border-slate-600 text-gray-200 text-sm rounded-lg focus:ring-blue-500 hidden">
+                                @for ($year = $currentYear; $year >= $currentYear - 2; $year--)
+                                    <option value="{{ $year }}" {{ $year == $currentYear ? 'selected' : '' }}>
+                                        {{ $year }}</option>
+                                @endfor
+                            </select>
+                            <select id="locationMonthFilter" onchange="updateLocationChart()"
+                                class="px-3 py-1.5 bg-slate-700 border border-slate-600 text-gray-200 text-sm rounded-lg focus:ring-blue-500 hidden">
+                                @foreach ($months as $num => $name)
+                                    <option value="{{ $num }}" {{ $num == $currentMonth ? 'selected' : '' }}>
+                                        {{ $name }}</option>
+                                @endforeach
                             </select>
                             <select id="topLimit" onchange="updateLocationChart()"
                                 class="px-3 py-1.5 bg-slate-700 border border-slate-600 text-gray-200 text-sm rounded-lg focus:ring-blue-500">
@@ -232,8 +247,6 @@
             @endif
         </div>
 
-        
-
     </div>
 
     <style>
@@ -259,13 +272,20 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
     <script>
-        // Data untuk location chart - per hari mingguan
+        // Global variables
+        window.dailyUsersLabels = @json($dailyUsers['labels'] ?? []);
+        window.dailyUsersRawLabels = @json($dailyUsers['raw_labels'] ?? []);
+        window.dailyUsersData = @json($dailyUsers['data'] ?? []);
+        window.dailyUsersChart = null;
+        window.userCapacityChart = null;
+        window.currentMonth = @json($currentMonth ?? 1);
+        window.currentYear = @json($currentYear ?? new Date().getFullYear());
         window.dayLabels = @json($dayLabels ?? []);
         window.weeklyLocationByDay = @json($weeklyLocationByDay ?? []);
         window.monthlyLocationData = [];
-        window.currentMonth = @json($currentMonth ?? 1);
-        window.currentYear = @json($currentYear ?? now()->year);
+        window.isLoadingChart = false;
 
+        // URL parameter helper
         function updateUrlParam(key, value) {
             const url = new URL(window.location.href);
             url.searchParams.set(key, value);
@@ -289,147 +309,343 @@
             }
         });
 
-        // Chart user
-document.addEventListener('DOMContentLoaded', () => {
-    const el = document.getElementById('userChart');
-    if (!el) return;
+        // Initialize year and month filters
+        function initializeFilters() {
+            const yearSelect = document.getElementById('userChartYearFilter');
+            const monthSelect = document.getElementById('userChartMonthFilter');
 
-    const ctx = el.getContext('2d');
-
-    const gradient = ctx.createLinearGradient(0, 0, 0, 200);
-    gradient.addColorStop(0, 'rgba(59,130,246,0.9)');
-    gradient.addColorStop(1, 'rgba(59,130,246,0.35)');
-
-    new Chart(ctx, {
-        type: 'bar',
-        data: {
-            labels: ['User Terhubung'],
-            datasets: [{
-                label: 'Online Users',
-                data: [@json($userOnline ?? 0)],
-                backgroundColor: gradient,
-                borderColor: '#60a5fa',
-                borderWidth: 1.5,
-                borderRadius: 10,
-                barThickness: 60,
-                hoverBackgroundColor: '#2563eb'
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            animation: {
-                duration: 900,
-                easing: 'easeOutQuart'
-            },
-            scales: {
-                y: {
-                    beginAtZero: true,
-                    ticks: {
-			stepSize: 1,
-			precision: 0,
-			callback: value => Math.round(value),
-                        color: '#cbd5f5',
-                        padding: 4,
-                        font: { size: 11 }
-                    },
-                    grid: {
-                        color: 'rgba(148,163,184,0.08)',
-                        drawBorder: false
-                    }
-                },
-                x: {
-                    ticks: {
-                        color: '#94a3b8',
-                        font: { size: 12 }
-                    },
-                    grid: { display: false }
-                }
-            },
-            plugins: {
-                legend: { display: false },
-                tooltip: {
-                    backgroundColor: '#020617',
-                    borderColor: '#1e293b',
-                    borderWidth: 1,
-                    titleColor: '#e5e7eb',
-                    bodyColor: '#93c5fd',
-                    padding: 10,
-                    displayColors: false,
-                    callbacks: {
-                        label: ctx => ` ${ctx.raw} users online`
-                    }
+            if (yearSelect && yearSelect.children.length === 0) {
+                for (let y = window.currentYear; y >= window.currentYear - 2; y--) {
+                    const opt = document.createElement('option');
+                    opt.value = y;
+                    opt.textContent = y;
+                    if (y === window.currentYear) opt.selected = true;
+                    yearSelect.appendChild(opt);
                 }
             }
-        }
-    });
-});
-        window.dailyUsersLabels = @json($dailyUsers['labels'] ?? []);
-        window.dailyUsersRawLabels = @json($dailyUsers['raw_labels'] ?? []);
-        window.dailyUsersData = @json($dailyUsers['data'] ?? []);
-    </script>
 
-    <script>
-        // Render daily users chart (weekly/monthly labels provided by controller)
-        document.addEventListener('DOMContentLoaded', () => {
-            const el = document.getElementById('userChartDaily');
+            if (monthSelect && monthSelect.children.length === 0) {
+                const months = [
+                    'Januari','Februari','Maret','April','Mei','Juni',
+                    'Juli','Agustus','September','Oktober','November','Desember'
+                ];
+                months.forEach((m, i) => {
+                    const opt = document.createElement('option');
+                    opt.value = i + 1;
+                    opt.textContent = m;
+                    if ((i + 1) === window.currentMonth) opt.selected = true;
+                    monthSelect.appendChild(opt);
+                });
+            }
+        }
+
+        // User Capacity Chart
+        function initUserCapacityChart() {
+            const el = document.getElementById('userChart');
             if (!el) return;
 
             const ctx = el.getContext('2d');
+            const onlineGradient = ctx.createLinearGradient(0, 0, 0, 200);
+            onlineGradient.addColorStop(0, 'rgba(59,130,246,0.9)');
+            onlineGradient.addColorStop(1, 'rgba(59,130,246,0.35)');
 
-            const gradient = ctx.createLinearGradient(0, 0, 0, 200);
-            gradient.addColorStop(0, 'rgba(59,130,246,0.9)');
-            gradient.addColorStop(1, 'rgba(59,130,246,0.2)');
+            const labels = ['Kapasitas User'];
+            const capacityVal = Number(@json($userCapacity ?? 0));
 
-            const displayLabels = Array.isArray(window.dailyUsersLabels) ? window.dailyUsersLabels : [];
-            const rawLabels = Array.isArray(window.dailyUsersRawLabels) ? window.dailyUsersRawLabels : [];
-            const dataNums = Array.isArray(window.dailyUsersData) ? window.dailyUsersData.map(v => Number(v || 0)) : [];
+            if (window.userCapacityChart) {
+                window.userCapacityChart.destroy();
+            }
 
-            new Chart(ctx, {
-                type: 'line',
+            window.userCapacityChart = new Chart(ctx, {
+                type: 'bar',
                 data: {
-                    labels: displayLabels,
+                    labels: labels,
                     datasets: [{
-                        label: 'Total Users',
-                        data: dataNums,
-                        fill: true,
-                        backgroundColor: gradient,
+                        label: 'Kapasitas',
+                        data: [capacityVal],
+                        backgroundColor: onlineGradient,
                         borderColor: '#60a5fa',
-                        tension: 0.35,
-                        pointRadius: 3,
-                        borderWidth: 2,
+                        borderWidth: 1,
+                        borderRadius: 10,
+                        barThickness: 108,
                     }]
                 },
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
+                    animation: { duration: 600, easing: 'easeOutQuart' },
                     scales: {
-                        y: { beginAtZero: true, ticks: { stepSize: 1, precision: 0 } },
-                        x: { ticks: { color: '#cbd5f5' } }
+                        y: { 
+                            beginAtZero: true, 
+                            ticks: { 
+                                stepSize: 1, 
+                                precision: 0, 
+                                callback: v => Math.round(v), 
+                                color: '#cbd5f5', 
+                                padding: 4, 
+                                font: { size: 11 } 
+                            }, 
+                            grid: { 
+                                color: 'rgba(148,163,184,0.08)', 
+                                drawBorder: false 
+                            } 
+                        },
+                        x: { 
+                            ticks: { 
+                                color: '#94a3b8', 
+                                font: { size: 12 } 
+                            }, 
+                            grid: { display: false } 
+                        }
                     },
                     plugins: {
                         legend: { display: false },
                         tooltip: {
+                            backgroundColor: '#020617',
+                            borderColor: '#1e293b',
+                            borderWidth: 1,
+                            titleColor: '#e5e7eb',
+                            bodyColor: '#93c5fd',
+                            padding: 10,
+                            displayColors: false,
                             callbacks: {
-                                title: function(items) {
-                                    if (!items || !items.length) return '';
-                                    const idx = items[0].dataIndex;
-                                    return rawLabels[idx] || '';
-                                },
-                                label: function(context) {
-                                    const v = (context.parsed && typeof context.parsed.y !== 'undefined') ? context.parsed.y : (context.raw ?? context.formattedValue ?? 0);
-                                    return `${v} users`;
-                                }
+                                label: (ctx) => `${ctx.raw ?? 0} users`
                             }
                         }
-                    },
-                    interaction: { mode: 'index', intersect: false }
+                    }
                 }
             });
+        }
+
+        // Load Daily Users Chart
+        async function loadDailyUsers(period = 'weekly') {
+            if (window.isLoadingChart) {
+                console.log('Chart is loading, skipping...');
+                return;
+            }
+            
+            const el = document.getElementById('userChartDaily');
+            if (!el) {
+                console.error('Canvas element not found');
+                return;
+            }
+
+            window.isLoadingChart = true;
+            console.log('Loading chart for period:', period);
+
+            try {
+                // Destroy existing chart FIRST
+                if (window.dailyUsersChart) {
+                    console.log('Destroying existing chart');
+                    try {
+                        window.dailyUsersChart.destroy();
+                    } catch (e) {
+                        console.warn('Error destroying chart:', e);
+                    }
+                    window.dailyUsersChart = null;
+                }
+
+                // Get canvas and clear it
+                const canvas = document.getElementById('userChartDaily');
+                if (!canvas) {
+                    console.error('Canvas element not found');
+                    return;
+                }
+                
+                // Force canvas reset
+                const parent = canvas.parentNode;
+                const newCanvas = canvas.cloneNode(true);
+                parent.replaceChild(newCanvas, canvas);
+                
+                // Wait for DOM update
+                await new Promise(resolve => setTimeout(resolve, 100));
+
+                let labels = [];
+                let rawLabels = [];
+                let dataNums = [];
+
+                if (period === 'weekly') {
+                    labels = Array.isArray(window.dailyUsersLabels) ? [...window.dailyUsersLabels] : [];
+                    rawLabels = Array.isArray(window.dailyUsersRawLabels) ? [...window.dailyUsersRawLabels] : [];
+                    dataNums = Array.isArray(window.dailyUsersData) ? window.dailyUsersData.map(v => Number(v || 0)) : [];
+                    console.log('Weekly data loaded:', {labels, rawLabels, dataNums});
+                } else {
+                    const monthEl = document.getElementById('userChartMonthFilter');
+                    const yearEl = document.getElementById('userChartYearFilter');
+                    const month = monthEl ? monthEl.value : window.currentMonth || 1;
+                    const year = yearEl ? yearEl.value : window.currentYear || new Date().getFullYear();
+                    
+                    console.log('Fetching monthly data for:', {month, year});
+                    
+                    const res = await fetch(`/dashboard/monthly-user-data?month=${encodeURIComponent(month)}&year=${encodeURIComponent(year)}`, { 
+                        credentials: 'same-origin',
+                        signal: AbortSignal.timeout(10000)
+                    });
+                    
+                    if (!res.ok) {
+                        console.error('Fetch failed with status:', res.status);
+                        throw new Error('Failed to fetch monthly data');
+                    }
+                    
+                    const json = await res.json();
+                    console.log('Monthly data received:', json);
+                    
+                    rawLabels = Array.isArray(json.labels) ? [...json.labels] : [];
+                    labels = rawLabels.map(d => {
+                        try { 
+                            return (new Date(d)).toLocaleDateString('id-ID'); 
+                        } catch (e) { 
+                            return d; 
+                        }
+                    });
+                    dataNums = Array.isArray(json.data) ? json.data.map(v => Number(v || 0)) : [];
+                    console.log('Monthly data processed:', {labels, rawLabels, dataNums});
+                }
+
+                if (!rawLabels.length || !dataNums.length) {
+                    console.warn('No data available, using placeholder');
+                    labels = ['Tidak ada data'];
+                    rawLabels = ['-'];
+                    dataNums = [0];
+                }
+
+                // Get the NEW canvas element after replacement
+                const finalCanvas = document.getElementById('userChartDaily');
+                if (!finalCanvas) {
+                    console.error('Canvas element not found after replacement');
+                    return;
+                }
+
+                const ctx = finalCanvas.getContext('2d');
+
+                // Recreate gradient
+                const gradient = ctx.createLinearGradient(0, 0, 0, 200);
+                gradient.addColorStop(0, 'rgba(59,130,246,0.9)');
+                gradient.addColorStop(1, 'rgba(59,130,246,0.2)');
+
+                console.log('Creating new chart with data:', {labels: labels, data: dataNums});
+
+                window.dailyUsersChart = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            label: 'Users',
+                            data: dataNums,
+                            fill: true,
+                            backgroundColor: gradient,
+                            borderColor: '#60a5fa',
+                            tension: 0.35,
+                            pointRadius: 3,
+                            borderWidth: 2,
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        animation: false,
+                        events: ['click'],
+                        scales: {
+                            y: { 
+                                beginAtZero: true, 
+                                ticks: { 
+                                    stepSize: 1, 
+                                    precision: 0,
+                                    color: '#cbd5f5'
+                                },
+                                grid: {
+                                    color: 'rgba(148,163,184,0.08)'
+                                }
+                            },
+                            x: { 
+                                ticks: { color: '#94a3b8' },
+                                grid: { display: false }
+                            }
+                        },
+                        plugins: {
+                            legend: { display: false },
+                            tooltip: {
+                                enabled: false
+                            }
+                        }
+                    }
+                });
+
+                // Store raw labels for reference
+                window.dailyUsersChart._rawLabels = rawLabels;
+                window.dailyUsersChart._period = period;
+                console.log('Chart created successfully for period:', period);
+
+            } catch (error) {
+                console.error('Error loading daily users chart:', error);
+                alert('Gagal memuat data: ' + error.message);
+            } finally {
+                window.isLoadingChart = false;
+            }
+        }
+
+        // Initialize all charts and event listeners
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('DOM Loaded - Initializing charts');
+            
+            initializeFilters();
+            initUserCapacityChart();
+            loadDailyUsers('weekly');
+
+            // Setup event listeners with delay
+            setTimeout(function() {
+                const modeSelect = document.getElementById('userChartMode');
+                const monthSelect = document.getElementById('userChartMonthFilter');
+                const yearSelect = document.getElementById('userChartYearFilter');
+
+                console.log('Setting up event listeners', {modeSelect, monthSelect, yearSelect});
+
+                if (modeSelect) {
+                    modeSelect.addEventListener('change', async function(e) {
+                        console.log('Mode changed to:', e.target.value);
+                        const isMonthly = e.target.value === 'monthly';
+                        
+                        if (monthSelect) monthSelect.classList.toggle('hidden', !isMonthly);
+                        if (yearSelect) yearSelect.classList.toggle('hidden', !isMonthly);
+                        
+                        // Reset loading flag
+                        window.isLoadingChart = false;
+                        
+                        // Wait a bit before loading
+                        await new Promise(resolve => setTimeout(resolve, 150));
+                        await loadDailyUsers(e.target.value);
+                    });
+                    console.log('Mode select listener attached');
+                } else {
+                    console.error('userChartMode element not found!');
+                }
+
+                if (monthSelect) {
+                    monthSelect.addEventListener('change', async function() {
+                        console.log('Month changed to:', this.value);
+                        if (modeSelect && modeSelect.value === 'monthly') {
+                            window.isLoadingChart = false;
+                            await new Promise(resolve => setTimeout(resolve, 150));
+                            await loadDailyUsers('monthly');
+                        }
+                    });
+                    console.log('Month select listener attached');
+                }
+
+                if (yearSelect) {
+                    yearSelect.addEventListener('change', async function() {
+                        console.log('Year changed to:', this.value);
+                        if (modeSelect && modeSelect.value === 'monthly') {
+                            window.isLoadingChart = false;
+                            await new Promise(resolve => setTimeout(resolve, 150));
+                            await loadDailyUsers('monthly');
+                        }
+                    });
+                    console.log('Year select listener attached');
+                }
+            }, 500);
         });
     </script>
-
-    
 
     <script src="{{ asset('js/location-chart.js') }}" defer></script>
 
@@ -455,23 +671,36 @@ document.addEventListener('DOMContentLoaded', () => {
             modal.classList.add('flex');
 
             try {
-                const res = await fetch(`/dashboard/location-clients?sn=${encodeURIComponent(sn)}`, { credentials: 'same-origin' });
-                if (!res.ok) throw new Error('failed');
+                const res = await fetch(`/dashboard/location-clients?sn=${encodeURIComponent(sn)}`, { 
+                    credentials: 'same-origin',
+                    signal: AbortSignal.timeout(5000)
+                });
+                
+                if (!res.ok) throw new Error('Failed to fetch clients');
+                
                 const data = await res.json();
                 container.innerHTML = '';
+                
                 if (!Array.isArray(data) || data.length === 0) {
                     container.innerHTML = '<div class="text-gray-400">Tidak ada perangkat</div>';
                     return;
                 }
+                
                 data.forEach(c => {
                     const el = document.createElement('div');
                     el.className = 'p-2 bg-slate-700/50 rounded';
-                    el.innerHTML = `<div class="flex justify-between"><div class="font-medium">${c.wifi_terminal_name||'Unknown'}</div><div class="text-sm text-gray-300">${c.wifi_terminal_ip||'-'}</div></div><div class="text-xs text-gray-400">${c.wifi_terminal_mac||''}</div>`;
+                    el.innerHTML = `
+                        <div class="flex justify-between">
+                            <div class="font-medium">${c.wifi_terminal_name || 'Unknown'}</div>
+                            <div class="text-sm text-gray-300">${c.wifi_terminal_ip || '-'}</div>
+                        </div>
+                        <div class="text-xs text-gray-400">${c.wifi_terminal_mac || ''}</div>
+                    `;
                     container.appendChild(el);
                 });
             } catch (e) {
                 container.innerHTML = '<div class="text-red-400">Gagal memuat data</div>';
-                console.error(e);
+                console.error('Error fetching location clients:', e);
             }
         }
 

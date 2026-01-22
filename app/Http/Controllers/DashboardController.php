@@ -65,6 +65,9 @@ class DashboardController extends Controller
         }
         $totalUser = $userOnline;
 
+        $capacityPerOnt = 2; 
+        $userCapacity = ($totalAp ?? 0) * $capacityPerOnt;
+
         /* ---------- log activity (dummy) ---------- */
         if (is_array($connections)) {
             foreach ($connections as $c) {
@@ -104,19 +107,6 @@ class DashboardController extends Controller
             $weeklyData[$i] = (int) ($stats[$dateStr] ?? 0);
         }
 
-        // Jika minggu ini kosong, fallback ke seluruh data historis
-        // if (array_sum($weeklyData) === 0) {
-        //     $allStats = DB::table('daily_user_stats')
-        //         ->orderBy('date')
-        //         ->pluck('user_count', 'date');
-        //     if (count($allStats) > 0) {
-        //         $weekDates = array_keys($allStats->toArray());
-        //         $weeklyData = array_values($allStats->toArray());
-        //     }
-        // }
-
-        // Convert ISO date labels to Indonesian weekday names for display,
-        // but keep raw dates for tooltip/context.
         $dayNames = ['Minggu','Senin','Selasa','Rabu','Kamis','Jumat','Sabtu'];
         $dailyLabels = [];
         foreach ($weekDates as $d) {
@@ -371,6 +361,7 @@ class DashboardController extends Controller
             'totalUser',
             'totalAp',
             'userOnline',
+            'userCapacity',
             'logActivity',
             'dailyUsers',
             'locations',
