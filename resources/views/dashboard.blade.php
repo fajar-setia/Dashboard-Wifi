@@ -1,7 +1,14 @@
 <x-app-layout>
 
     <div class="space-y-6 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 min-h-screen p-6">
-
+    <!-- Loading overlay -->
+    <div id="pageLoader" class="fixed inset-0 bg-slate-900/90 z-50 flex items-center justify-center">
+        <div class="text-white text-center">
+            <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-white mx-auto mb-3"></div>
+            <p>Memuat Dashboard...</p>
+        </div>
+    </div>
+    
 	<h1 class="text-white text-3xl font-bold mb-4">
     		Dashboard Overview
 	</h1>
@@ -373,7 +380,7 @@
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
-                    animation: { duration: 600, easing: 'easeOutQuart' },
+                    animation: false,
                     scales: {
                         y: { 
                             beginAtZero: true, 
@@ -710,5 +717,12 @@
             modal.classList.remove('flex');
         }
     </script>
-
+    <script>
+    // Hide loader setelah semua chart ready
+    window.addEventListener('load', function() {
+        setTimeout(() => {
+            document.getElementById('pageLoader')?.classList.add('hidden');
+        }, 500);
+    });
+    </script>
 </x-app-layout>
