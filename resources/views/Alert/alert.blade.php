@@ -7,6 +7,13 @@
     @endif
 
     <div class="flex-1 p-6 space-y-6">
+        <!-- Loading overlay -->
+        <div id="pageLoader" class="fixed inset-0 bg-slate-900/90 z-50 flex items-center justify-center">
+            <div class="text-white text-center">
+                <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-white mx-auto mb-3"></div>
+                <p>Memuat Alert...</p>
+            </div>
+        </div>
 
         <!-- Header Metrics -->
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -82,6 +89,13 @@
                 @endforeach
             </div>
         </div>
-
     </div>
+    <script>
+    // Hide loader setelah semua chart ready
+    window.addEventListener('load', function() {
+        setTimeout(() => {
+            document.getElementById('pageLoader')?.classList.add('hidden');
+        }, 500);
+    });
+    </script>
 </x-app-layout>

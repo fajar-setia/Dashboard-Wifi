@@ -2,6 +2,13 @@
     <div class="flex bg-gray-900 min-h-screen text-gray-300">
 
         <main class="flex-1 p-6 space-y-6">
+            <!-- Loading overlay -->
+            <div id="pageLoader" class="fixed inset-0 bg-slate-900/90 z-50 flex items-center justify-center">
+                <div class="text-white text-center">
+                    <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-white mx-auto mb-3"></div>
+                    <p>Memuat Pengguna Terhubung...</p>
+                </div>
+            </div>
 
             <h1 class="text-white font-bold text-2xl mb-4">Pengguna Terhubung</h1>
 
@@ -103,9 +110,14 @@
             <div class="mt-6">
     {{ $aps->links() }}
 </div>
-
-
-        </main>
-
+ </main>
+    <script>
+    // Hide loader setelah semua chart ready
+    window.addEventListener('load', function() {
+        setTimeout(() => {
+            document.getElementById('pageLoader')?.classList.add('hidden');
+        }, 500);
+    });
+    </script>
     </div>
 </x-app-layout>
