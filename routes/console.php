@@ -9,6 +9,9 @@ Artisan::command('inspire', function () {
     $this->comment(Inspiring::quote());
 })->purpose('Display an inspiring quote');
 
-Schedule::command('collect:daily-users')
-        ->everyMinute()
-        ->appendOutputTo(storage_path('logs/scheduler.log'));
+// Schedule::command('collect:daily-users')
+//         ->everySixHours()
+//         ->appendOutputTo(storage_path('logs/scheduler.log'))
+//         ->withoutOverlapping();
+
+// Disabled - using real-time updates instead

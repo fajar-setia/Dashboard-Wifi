@@ -19,6 +19,14 @@ Route::get('/dashboard', [DashboardController::class, 'index'])
     ->middleware(['auth', 'verified'])
     ->name('dashboard');
 
+Route::get('/dashboard/user-online', [DashboardController::class, 'getUserOnline'])
+    ->middleware(['auth', 'verified'])
+    ->name('dashboard.user-online');
+
+Route::get('/dashboard/weekly-user-data', [DashboardController::class, 'getWeeklyUserData'])
+    ->middleware(['auth', 'verified'])
+    ->name('dashboard.weekly-user-data');
+
 Route::get('/dashboard/monthly-location-data', [DashboardController::class, 'monthlyLocationData'])
     ->middleware(['auth','verified']);
 

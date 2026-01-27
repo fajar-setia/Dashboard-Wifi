@@ -573,4 +573,115 @@ class DashboardController extends Controller
 
         return response()->json($data);
     }
+
+    public function getUserOnline()
+    {
+        try {
+            $onuService = app(\App\Services\OnuApiService::class);
+            $connections = $onuService->getAllOnuWithClients();
+
+            $uniqueMacSet = [];
+            if (is_array($connections)) {
+                foreach ($connections as $c) {
+                    if (!is_array($c) || !isset($c['wifiClients'])) {
+                        continue;
+                    }
+                    $wifi = $c['wifiClients'];
+                    $allClients = array_merge(
+                        $wifi['5G'] ?? [],
+                        $wifi['2_4G'] ?? [],
+                        $wifi['unknown'] ?? []
+                    );
+
+                    foreach ($allClients as $client) {
+                        if (!isset($client['wifi_terminal_mac']))
+                            continue;
+                        $mac = strtoupper(trim($client['wifi_terminal_mac']));
+                        $mac = preg_replace('/[^A-F0-9:]/i', '', $mac);
+                        if ($mac === '')
+                            continue;
+                        $uniqueMacSet[$mac] = true;
+                    }
+                }
+            }
+            $userOnline = count($uniqueMacSet);
+
+            // Update daily_user_stats secara real-time
+            $date = now()->toDateString();
+            DB::table('daily_user_stats')->updateOrInsert(
+                ['date' => $date],
+                ['user_count' => $userOnline, 'updated_at' => now(), 'created_at' => now()]
+            );
+
+            return response()->json(['userOnline' => $userOnline]);
+        } catch (\Throwable $e) {
+            Log::error('DashboardController@getUserOnline : ' . $e->getMessage());
+
+            // Fallback: return data dari database jika API error
+            try {
+                $date = now()->toDateString();
+                $lastStats = DB::table('daily_user_stats')
+                    ->where('date', $date)
+                    ->first();
+
+                $userOnline = $lastStats ? $lastStats->user_count : 0;
+
+                return response()->json([
+                    'userOnline' => $userOnline,
+                    'cached' => true,
+                    'error' => 'Using cached data due to API timeout'
+                ]);
+            } catch (\Throwable $dbError) {
+                Log::error('Database fallback error: ' . $dbError->getMessage());
+                return response()->json(['error' => 'Unable to fetch user data'], 500);
+            }
+        }
+    }
+
+    public function getWeeklyUserData()
+    {
+        try {
+            // Build ISO date labels for the current week (Mon...Sun)
+            $today = now();
+            $monday = $today->copy()->startOfWeek();
+            $weekDates = [];
+            for ($i = 0; $i < 7; $i++) {
+                $weekDates[] = $monday->copy()->addDays($i)->toDateString();
+            }
+
+            // Ambil data mingguan langsung dari DB
+            $endOfWeek = $monday->copy()->endOfWeek();
+
+            $stats = DB::table('daily_user_stats')
+                ->whereBetween('date', [
+                    $monday->toDateString(),
+                    $endOfWeek->toDateString()
+                ])
+                ->pluck('user_count', 'date');
+
+            $weeklyData = array_fill(0, 7, 0);
+            foreach ($weekDates as $i => $dateStr) {
+                $weeklyData[$i] = (int) ($stats[$dateStr] ?? 0);
+            }
+
+            $dayNames = ['Minggu','Senin','Selasa','Rabu','Kamis','Jumat','Sabtu'];
+            $dailyLabels = [];
+            foreach ($weekDates as $d) {
+                try {
+                    $dt = Carbon::parse($d);
+                    $dailyLabels[] = $dayNames[$dt->dayOfWeek] ?? $d;
+                } catch (\Throwable $e) {
+                    $dailyLabels[] = $d;
+                }
+            }
+
+            return response()->json([
+                'labels' => $dailyLabels,
+                'data' => $weeklyData
+            ]);
+        } catch (\Throwable $e) {
+            Log::error('DashboardController@getWeeklyUserData : ' . $e->getMessage());
+            return response()->json(['error' => 'Unable to fetch weekly data'], 500);
+        }
+    }
 }

@@ -3,9 +3,9 @@
 namespace App\Console\Commands;
 
 use Illuminate\Console\Command;
-use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\DB;
+use App\Services\OnuApiService;
 
 class UpdateDailyUserStats extends Command
 {
@@ -31,23 +31,21 @@ class UpdateDailyUserStats extends Command
         $this->info('Starting daily user stats aggregation');
 
         try {
-            $response = Http::timeout(10)->get('http://172.16.105.26:6767/api/onu/connect');
+            $service = new OnuApiService();
+            $connections = $service->getAllOnuWithClients();
 
             $count = 0;
 
-            if ($response->ok()) {
-                $connections = $response->json();
-                if (is_array($connections)) {
-                    foreach ($connections as $c) {
-                        if (!is_array($c) || !isset($c['wifiClients'])) continue;
-                        $wifi = $c['wifiClients'];
-                        $count += count($wifi['5G'] ?? []);
-                        $count += count($wifi['2_4G'] ?? []);
-                        $count += count($wifi['unknown'] ?? []);
-                    }
+            if (is_array($connections)) {
+                foreach ($connections as $c) {
+                    if (!is_array($c) || !isset($c['wifiClients'])) continue;
+                    $wifi = $c['wifiClients'];
+                    $count += count($wifi['5G'] ?? []);
+                    $count += count($wifi['2_4G'] ?? []);
+                    $count += count($wifi['unknown'] ?? []);
                 }
             } else {
-                Log::warning('UpdateDailyUserStats: API response not OK');
+                Log::warning('UpdateDailyUserStats: No connections data from service');
             }
 
             $date = now()->toDateString();

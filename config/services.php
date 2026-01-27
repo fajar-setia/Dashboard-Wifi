@@ -36,7 +36,7 @@ return [
     ],
 
     'onu_api' => [
-        'url' => env('ONU_API_URL', 'http://172.16.105.26:6767/api/onu/connect'),
+        'url' => env('ONU_API_URL', 'http://172.16.105.3:3080'), // Updated to working endpoint
     ],
     
     'google' => [

@@ -22,7 +22,7 @@
                 </div>
                 <div class="relative">
                     <p class="text-blue-200 text-sm font-medium mb-2 uppercase tracking-wider">Pengguna Terhubung</p>
-                    <p class="text-white font-bold text-4xl">{{ $userOnline }}</p>
+                    <p id="userOnlineCount" class="text-white font-bold text-4xl">{{ $userOnline }}</p>
                 </div>
             </div>
 
@@ -723,6 +723,82 @@
         setTimeout(() => {
             document.getElementById('pageLoader')?.classList.add('hidden');
         }, 500);
+    });
+    </script>
+
+    <script>
+    // Function to update user online count in real-time
+    function updateUserOnline() {
+        fetch('/dashboard/user-online', {
+            method: 'GET',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'Content-Type': 'application/json',
+            },
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.userOnline !== undefined) {
+                const element = document.getElementById('userOnlineCount');
+                if (element) {
+                    element.textContent = data.userOnline;
+                    if (data.cached) {
+                        console.log('Using cached data:', data.error);
+                    }
+                }
+            }
+        })
+        .catch(error => {
+            console.error('Error updating user online count:', error);
+            // Don't show error to user, just log it
+        });
+    }
+
+    // Function to update weekly chart data in real-time
+    function updateWeeklyChart() {
+        if (!window.dailyUsersChart) {
+            console.log('Chart not ready yet, skipping update');
+            return;
+        }
+
+        fetch('/dashboard/weekly-user-data', {
+            method: 'GET',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'Content-Type': 'application/json',
+            },
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.labels && data.data && window.dailyUsersChart) {
+                // Update chart data
+                window.dailyUsersChart.data.labels = data.labels;
+                window.dailyUsersChart.data.datasets[0].data = data.data;
+                window.dailyUsersChart.update('none'); // Update without animation
+                console.log('Chart updated with new data:', data);
+            }
+        })
+        .catch(error => {
+            console.error('Error updating weekly chart:', error);
+            // Don't show error to user, just log it
+        });
+    }
+
+    // Start real-time updates after page loads
+    document.addEventListener('DOMContentLoaded', function() {
+        console.log('Starting real-time updates...');
+
+        // Initial updates
+        setTimeout(() => {
+            updateUserOnline();
+            updateWeeklyChart();
+        }, 2000); // Wait 2 seconds for everything to load
+
+        // Update every 30 seconds (reduced frequency to avoid API overload)
+        setInterval(() => {
+            updateUserOnline();
+            updateWeeklyChart();
+        }, 30000);
     });
     </script>
 </x-app-layout>

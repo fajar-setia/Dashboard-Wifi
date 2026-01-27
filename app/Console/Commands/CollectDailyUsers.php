@@ -3,9 +3,9 @@
 namespace App\Console\Commands;
 
 use Illuminate\Console\Command;
-use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\DB;
+use App\Services\OnuApiService;
 
 class CollectDailyUsers extends Command
 {
@@ -15,19 +15,13 @@ class CollectDailyUsers extends Command
     public function handle()
     {
         try {
-            $this->info('Fetching API...');
-            $response = Http::timeout(10)->get('http://172.16.105.26:6767/api/onu/connect');
+            $this->info('Fetching data from OnuApiService...');
+            $service = new OnuApiService();
+            $connections = $service->getAllOnuWithClients();
 
-            if (! $response->ok()) {
-                Log::warning('API not OK: '.$response->status());
-                $this->error('API not OK');
-                return 1;
-            }
-
-            $connections = $response->json();
             if (!is_array($connections)) {
-                Log::warning('Invalid API response');
-                $this->error('Invalid API response');
+                Log::warning('Invalid connections data from service');
+                $this->error('Invalid connections data');
                 return 1;
             }
 
@@ -54,10 +48,10 @@ class CollectDailyUsers extends Command
                 }
             }
 
-            $currentCount = count($macSet);
-            $this->info("Current unique users: {$currentCount}");
+            $uniqueCount = count($macSet);
+            $this->info("Found {$uniqueCount} unique users");
 
-            // SIMPAN PEAK HARIAN (UPSERT + GREATEST)
+            // Simpan ke database sebagai peak harian
             DB::statement("
                 INSERT INTO daily_user_stats (date, user_count, meta, updated_at)
                 VALUES (
@@ -72,19 +66,21 @@ class CollectDailyUsers extends Command
                 ON DUPLICATE KEY UPDATE
                     user_count = GREATEST(user_count, VALUES(user_count)),
                     updated_at = NOW()
-            ", [$currentCount, $currentCount]);
+            ", [$uniqueCount, $uniqueCount]);
 
             // SIMPAN PER LOKASI
             $this->savePerLocation($connections);
 
-            $this->info('Daily peak saved successfully');
+            Log::info('CollectDailyUsers: collected', ['unique_users' => $uniqueCount]);
+            $this->info('Daily users collection completed');
             return 0;
 
         } catch (\Throwable $e) {
-            Log::error('CollectDailyUsers error: '.$e->getMessage());
-            $this->error('Exception: '.$e->getMessage());
+            Log::error('CollectDailyUsers error: ' . $e->getMessage());
+            $this->error('Failed to collect daily users: ' . $e->getMessage());
             return 1;
         }
+    }
     }
 
     private function savePerLocation($connections)
@@ -134,34 +130,34 @@ class CollectDailyUsers extends Command
         }
 
         foreach ($locationData as $location => $data) {
-        $count = count($data['users']);
+            $count = count($data['users']);
 
-        if ($count === 0) {
-            continue;
+            if ($count === 0) {
+                continue;
+            }
+
+            DB::statement("
+                INSERT INTO daily_location_stats
+                    (date, location, kemantren, sn, user_count, created_at, updated_at)
+                VALUES (
+                    CURRENT_DATE,
+                    ?,
+                    ?,
+                    ?,
+                    ?,
+                    NOW(),
+                    NOW()
+                )
+                ON DUPLICATE KEY UPDATE
+                    user_count = GREATEST(user_count, VALUES(user_count)),
+                    updated_at = NOW()
+            ", [
+                $location,
+                $data['kemantren'],
+                $data['sn'],
+                $count
+            ]);
         }
-
-        DB::statement("
-            INSERT INTO daily_location_stats
-                (date, location, kemantren, sn, user_count, created_at, updated_at)
-            VALUES (
-                CURRENT_DATE,
-                ?,
-                ?,
-                ?,
-                ?,
-                NOW(),
-                NOW()
-            )
-            ON DUPLICATE KEY UPDATE
-                user_count = GREATEST(user_count, VALUES(user_count)),
-                updated_at = NOW()
-        ", [
-            $location,
-            $data['kemantren'],
-            $data['sn'],
-            $count
-        ]);
-    }
     }
 
     private function readOntMap(): array
