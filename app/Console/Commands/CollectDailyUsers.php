@@ -81,7 +81,6 @@ class CollectDailyUsers extends Command
             return 1;
         }
     }
-    }
 
     private function savePerLocation($connections)
     {
