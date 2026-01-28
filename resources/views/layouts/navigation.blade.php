@@ -192,4 +192,15 @@
     .custom-scrollbar::-webkit-scrollbar-thumb:hover {
         background: #4b5563;
     }
+
+    /* Kill da overflow on da sidebar uwu */
+    nav {
+        overflow-x: hidden;
+        overflow-y: hidden;
+    }
+
+    nav > div {
+        overflow: hidden;
+    }
+
 </style>
