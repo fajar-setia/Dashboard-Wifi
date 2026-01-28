@@ -12,6 +12,12 @@ class Kernel extends ConsoleKernel
      */
     protected function schedule(Schedule $schedule)
     {
+        // Update hourly stats every hour (real-time data from API)
+        $schedule->command('update:hourly-stats')
+            ->hourly()
+            ->timezone('Asia/Jakarta')
+            ->runInBackground();
+
         // Run the daily user stats aggregation at midnight Asia/Jakarta
         $schedule->command('stats:update-daily-users')
             ->dailyAt('00:00')

@@ -688,7 +688,35 @@ class DashboardController extends Controller
     public function getDailyUserDataByHour(Request $request)
     {
         try {
-            $date = $request->query('date', now()->toDateString());
+            $dateParam = $request->query('date');
+
+            // Use Asia/Jakarta timezone for all date handling
+            $nowJakarta = Carbon::now('Asia/Jakarta');
+
+            // Use provided date or default to today (parse in Jakarta timezone)
+            if (!$dateParam) {
+                $dateObj = $nowJakarta->copy()->startOfDay();
+            } else {
+                try {
+                    // Expect YYYY-MM-DD; parse explicitly in Asia/Jakarta
+                    $dateObj = Carbon::createFromFormat('Y-m-d', $dateParam, 'Asia/Jakarta')->startOfDay();
+                } catch (\Throwable $e) {
+                    try {
+                        // Fallback: generic parse but force Jakarta timezone
+                        $dateObj = Carbon::parse($dateParam, 'Asia/Jakarta')->startOfDay();
+                    } catch (\Throwable $ex) {
+                        Log::warning('Invalid date format provided: ' . $dateParam);
+                        $dateObj = $nowJakarta->copy()->startOfDay();
+                    }
+                }
+            }
+
+            // Don't allow future dates (compare in Jakarta timezone)
+            if ($dateObj->isAfter($nowJakarta)) {
+                $dateObj = $nowJakarta->copy()->startOfDay();
+            }
+
+            $date = $dateObj->toDateString();
 
             // Get hour labels (0-23)
             $hourLabels = [];
@@ -696,11 +724,15 @@ class DashboardController extends Controller
                 $hourLabels[] = str_pad($i, 2, '0', STR_PAD_LEFT) . ':00';
             }
 
-            // Ambil data per jam dari daily_user_stats_by_hour jika ada, atau aggregate dari log
-            // Untuk sekarang kita return data dummy per jam
+            // Initialize data with zeros for all 24 hours
             $hourlyData = array_fill(0, 24, 0);
+            
+            // Determine if this is today's date (use Asia/Jakarta timezone)
+            $now = Carbon::now('Asia/Jakarta');
+            $isToday = $date === $now->toDateString();
+            $currentHour = $isToday ? (int)$now->format('H') : 23;
 
-            // Coba ambil dari database jika ada tabel hour-based stats
+            // Fetch data from database for the selected date
             try {
                 $stats = DB::table('daily_user_stats_hourly')
                     ->where('date', $date)
@@ -709,18 +741,45 @@ class DashboardController extends Controller
 
                 if ($stats->count() > 0) {
                     foreach ($stats as $stat) {
-                        $hourlyData[(int) $stat->hour] = (int) $stat->user_count;
+                        $hourIndex = (int)$stat->hour;
+                        // Only include data up to current hour if today
+                        if ($isToday && $hourIndex > $currentHour) {
+                            $hourlyData[$hourIndex] = 0;
+                        } else {
+                            $hourlyData[$hourIndex] = (int)$stat->user_count;
+                        }
                     }
+                    
+                    // Zero out future hours for today
+                    if ($isToday) {
+                        for ($i = $currentHour + 1; $i < 24; $i++) {
+                            $hourlyData[$i] = 0;
+                        }
+                    }
+                } else {
+                    Log::info('No hourly stats found for date: ' . $date);
                 }
             } catch (\Throwable $e) {
-                Log::warning('daily_user_stats_hourly table might not exist: ' . $e->getMessage());
-                // Fallback: return empty data with zeros
+                Log::warning('Error fetching daily_user_stats_hourly: ' . $e->getMessage());
             }
+
+            Log::info('getDailyUserDataByHour response', [
+                'requestedDate' => $dateParam,
+                'processedDate' => $date,
+                'isToday' => $isToday,
+                'currentHour' => $currentHour,
+                'dataCount' => count(array_filter($hourlyData)),
+                'dataSum' => array_sum($hourlyData),
+                'timezone' => 'Asia/Jakarta',
+            ]);
 
             return response()->json([
                 'labels' => $hourLabels,
                 'data' => $hourlyData,
-                'date' => $date
+                'date' => $date,
+                'isToday' => $isToday,
+                'currentHour' => $currentHour,
+                'timezone' => 'Asia/Jakarta',
             ]);
         } catch (\Throwable $e) {
             Log::error('DashboardController@getDailyUserDataByHour : ' . $e->getMessage());

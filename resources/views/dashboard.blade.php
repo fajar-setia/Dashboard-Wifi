@@ -69,8 +69,27 @@
                         </select>
                     </div>
                 </div>
-                <div class="w-full h-80 relative">
-                    <canvas id="userChartDaily" class="h-full block"></canvas>
+                <div class="grid grid-cols-1 lg:grid-cols-4 gap-4">
+                    <!-- Stats Sidebar -->
+                    <div class="lg:col-span-1 space-y-4">
+                        <div class="bg-slate-700/50 rounded-lg p-4 border border-slate-600/50">
+                            <div class="text-sm text-gray-400 mb-1">Maximum</div>
+                            <div class="text-2xl font-bold text-blue-400" id="statMaxUsers">0</div>
+                        </div>
+                        <div class="bg-slate-700/50 rounded-lg p-4 border border-slate-600/50">
+                            <div class="text-sm text-gray-400 mb-1">Minimum</div>
+                            <div class="text-2xl font-bold text-blue-400" id="statMinUsers">0</div>
+                        </div>
+                        <div class="bg-slate-700/50 rounded-lg p-4 border border-slate-600/50">
+                            <div class="text-sm text-gray-400 mb-1">Average</div>
+                            <div class="text-2xl font-bold text-blue-400" id="statAvgUsers">0</div>
+                        </div>
+                    </div>
+
+                    <!-- Chart -->
+                    <div class="lg:col-span-3 h-80 relative">
+                        <canvas id="userChartDaily" class="h-full block"></canvas>
+                    </div>
                 </div>
             </div>
         </div>
@@ -399,12 +418,18 @@
                     console.log('Weekly data loaded:', {labels, rawLabels, dataNums});
                 } else if (period === 'daily') {
                     const dateEl = document.getElementById('dailyDateFilter');
-                    const selectedDate = dateEl ? dateEl.value : new Date().toISOString().split('T')[0];
+                    let selectedDate = dateEl ? dateEl.value : new Date().toISOString().split('T')[0];
                     
-                    console.log('Fetching daily data for:', selectedDate);
+                    // Ensure we have a valid date string (YYYY-MM-DD format)
+                    if (!selectedDate || selectedDate === '') {
+                        selectedDate = new Date().toISOString().split('T')[0];
+                    }
+                    
+                    console.log('Fetching daily data for date:', selectedDate);
                     
                     const res = await fetch(`/dashboard/daily-user-data-by-hour?date=${encodeURIComponent(selectedDate)}`, { 
                         credentials: 'same-origin',
+                        cache: 'no-store',
                         signal: AbortSignal.timeout(10000)
                     });
                     
@@ -419,7 +444,7 @@
                     labels = Array.isArray(json.labels) ? [...json.labels] : [];
                     rawLabels = labels;
                     dataNums = Array.isArray(json.data) ? json.data.map(v => Number(v || 0)) : [];
-                    console.log('Daily data processed:', {labels, dataNums});
+                    console.log('Daily data processed:', {selectedDate, labels, dataNums, dataSum: dataNums.reduce((a,b)=>a+b,0)});
                 } else {
                     const monthEl = document.getElementById('userChartMonthFilter');
                     const yearEl = document.getElementById('userChartYearFilter');
@@ -430,6 +455,7 @@
                     
                     const res = await fetch(`/dashboard/monthly-user-data?month=${encodeURIComponent(month)}&year=${encodeURIComponent(year)}`, { 
                         credentials: 'same-origin',
+                        cache: 'no-store',
                         signal: AbortSignal.timeout(10000)
                     });
                     
@@ -527,6 +553,9 @@
                 window.dailyUsersChart._period = period;
                 console.log('Chart created successfully for period:', period);
 
+                // Calculate and display statistics
+                updateChartStatistics(dataNums);
+
             } catch (error) {
                 console.error('Error loading daily users chart:', error);
                 alert('Gagal memuat data: ' + error.message);
@@ -535,12 +564,65 @@
             }
         }
 
+        // Function to calculate and display chart statistics
+        function updateChartStatistics(data) {
+            // Filter out zeros and non-numeric values
+            const validData = data.filter(v => typeof v === 'number' && v > 0);
+            
+            if (validData.length === 0) {
+                // No data available
+                document.getElementById('statMaxUsers').textContent = '0';
+                document.getElementById('statMinUsers').textContent = '0';
+                document.getElementById('statAvgUsers').textContent = '0';
+                return;
+            }
+
+            // Calculate statistics
+            const maxValue = Math.max(...validData);
+            const minValue = Math.min(...validData);
+            const avgValue = (validData.reduce((a, b) => a + b, 0) / validData.length).toFixed(1);
+
+            // Update UI
+            document.getElementById('statMaxUsers').textContent = maxValue;
+            document.getElementById('statMinUsers').textContent = minValue;
+            document.getElementById('statAvgUsers').textContent = avgValue;
+
+            console.log('Chart statistics updated:', {
+                max: maxValue,
+                min: minValue,
+                avg: avgValue,
+                dataPoints: validData.length
+            });
+        }
+
         // Initialize all charts and event listeners
         document.addEventListener('DOMContentLoaded', function() {
             console.log('DOM Loaded - Initializing charts');
             
             initializeFilters();
-            loadDailyUsers('weekly');
+            
+            // Initialize date picker with today's date
+            const dateSelect = document.getElementById('dailyDateFilter');
+            if (dateSelect && !dateSelect.value) {
+                const today = new Date();
+                const year = today.getFullYear();
+                const month = String(today.getMonth() + 1).padStart(2, '0');
+                const day = String(today.getDate()).padStart(2, '0');
+                dateSelect.value = `${year}-${month}-${day}`;
+                console.log('Date picker initialized to:', dateSelect.value);
+            }
+            
+            // Load chart according to current selected mode (weekly/daily/monthly)
+            const initialMode = document.getElementById('userChartMode')?.value || 'weekly';
+            // If daily and date picker exists, ensure the date is set
+            if (initialMode === 'daily') {
+                const ds = document.getElementById('dailyDateFilter');
+                if (ds && !ds.value) {
+                    const today = new Date();
+                    ds.value = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;
+                }
+            }
+            loadDailyUsers(initialMode);
 
             // Setup event listeners with delay
             setTimeout(function() {
@@ -725,6 +807,16 @@
             return;
         }
 
+        // Get current mode from UI
+        const modeSelect = document.getElementById('userChartMode');
+        const currentMode = modeSelect ? modeSelect.value : 'weekly';
+
+        // Only auto-update if in weekly mode, otherwise skip
+        if (currentMode !== 'weekly') {
+            console.log('Chart is in ' + currentMode + ' mode, skipping auto-update');
+            return;
+        }
+
         fetch('/dashboard/weekly-user-data', {
             method: 'GET',
             headers: {
@@ -739,6 +831,7 @@
                 window.dailyUsersChart.data.labels = data.labels;
                 window.dailyUsersChart.data.datasets[0].data = data.data;
                 window.dailyUsersChart.update('none'); // Update without animation
+                updateChartStatistics(data.data);
                 console.log('Chart updated with new data:', data);
             }
         })
