@@ -21,7 +21,7 @@
     }
 </style>
 
-<body class="font-sans antialiased bg-gray-900" x-data="{ sidebarOpen: true }">
+<body class="font-sans antialiased bg-gray-900" x-data="{ sidebarOpen: false }">
 
     <div class="flex min-h-screen">
 
