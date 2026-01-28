@@ -51,7 +51,15 @@ class CollectDailyUsers extends Command
             $uniqueCount = count($macSet);
             $this->info("Found {$uniqueCount} unique users");
 
-            // Simpan ke database sebagai peak harian
+            // SIMPAN MAC ADDRESS LOG
+            $this->saveMacAddressLog($connections, $macSet);
+
+            // Ambil rekap total user dari daftar MAC yang terhubung hari ini
+            $totalUserFromMacLog = $this->getTotalUserFromMacLog();
+            
+            // Simpan ke database dengan nilai tertinggi antara current collection dan MAC log
+            $finalCount = max($uniqueCount, $totalUserFromMacLog);
+            
             DB::statement("
                 INSERT INTO daily_user_stats (date, user_count, meta, updated_at)
                 VALUES (
@@ -59,19 +67,20 @@ class CollectDailyUsers extends Command
                     ?,
                     JSON_OBJECT(
                         'sample_count', ?,
-                        'collected_at', NOW()
+                        'collected_at', NOW(),
+                        'from_mac_log', ?
                     ),
                     NOW()
                 )
                 ON DUPLICATE KEY UPDATE
                     user_count = GREATEST(user_count, VALUES(user_count)),
                     updated_at = NOW()
-            ", [$uniqueCount, $uniqueCount]);
+            ", [$finalCount, $finalCount, $totalUserFromMacLog]);
 
             // SIMPAN PER LOKASI
             $this->savePerLocation($connections);
 
-            Log::info('CollectDailyUsers: collected', ['unique_users' => $uniqueCount]);
+            Log::info('CollectDailyUsers: collected', ['unique_users' => $uniqueCount, 'from_mac_log' => $totalUserFromMacLog, 'final_count' => $finalCount]);
             $this->info('Daily users collection completed');
             return 0;
 
@@ -188,4 +197,53 @@ class CollectDailyUsers extends Command
         }
         return $map;
     }
-}
+
+    private function saveMacAddressLog($connections, $macSet)
+    {
+        $ontMap = cache()->remember('ont_map_paket_all', 600, fn() => $this->readOntMap());
+        $today = now()->toDateString();
+
+        foreach ($connections as $c) {
+            $sn = strtoupper(trim($c['sn'] ?? ''));
+            $info = $ontMap[$sn] ?? null;
+            $location = $info['location'] ?? '-';
+            $kemantren = $info['kemantren'] ?? '-';
+
+            if (!isset($c['wifiClients']) || !is_array($c['wifiClients'])) {
+                continue;
+            }
+
+            $wifi = $c['wifiClients'];
+            $all = array_merge(
+                $wifi['5G'] ?? [],
+                $wifi['2_4G'] ?? [],
+                $wifi['unknown'] ?? []
+            );
+
+            foreach ($all as $client) {
+                if (!isset($client['wifi_terminal_mac'])) continue;
+                $mac = strtoupper(trim($client['wifi_terminal_mac']));
+                $mac = preg_replace('/[^A-F0-9:]/i', '', $mac);
+                if ($mac === '') continue;
+
+                // Insert atau update MAC log untuk hari ini
+                DB::table('daily_mac_logs')->updateOrInsert(
+                    ['date' => $today, 'mac_address' => $mac],
+                    [
+                        'location' => $location,
+                        'kemantren' => $kemantren,
+                        'last_seen' => now()
+                    ]
+                );
+            }
+        }
+    }
+
+    private function getTotalUserFromMacLog()
+    {
+        $today = now()->toDateString();
+        return DB::table('daily_mac_logs')
+            ->where('date', $today)
+            ->distinct('mac_address')
+            ->count('mac_address');
+    }}
