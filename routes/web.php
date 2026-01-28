@@ -27,6 +27,10 @@ Route::get('/dashboard/weekly-user-data', [DashboardController::class, 'getWeekl
     ->middleware(['auth', 'verified'])
     ->name('dashboard.weekly-user-data');
 
+Route::get('/dashboard/daily-user-data-by-hour', [DashboardController::class, 'getDailyUserDataByHour'])
+    ->middleware(['auth', 'verified'])
+    ->name('dashboard.daily-user-data-by-hour');
+
 Route::get('/dashboard/monthly-location-data', [DashboardController::class, 'monthlyLocationData'])
     ->middleware(['auth','verified']);
 

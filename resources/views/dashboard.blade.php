@@ -58,8 +58,13 @@
                 <select id="userChartMode"
                     class="bg-slate-700 border border-slate-600 text-gray-200 text-sm rounded-lg px-3 py-1.5 cursor-pointer">
                     <option value="weekly">Mingguan</option>
+                    <option value="daily">Harian</option>
                     <option value="monthly">Bulanan</option>
                 </select>
+
+                <!-- Tanggal untuk Harian -->
+                <input type="date" id="dailyDateFilter"
+                    class="hidden bg-slate-700 border border-slate-600 text-gray-200 text-sm rounded-lg px-3 py-1.5 cursor-pointer">
 
                 <!-- Tahun -->
                 <select id="userChartYearFilter"
@@ -476,6 +481,29 @@
                     rawLabels = Array.isArray(window.dailyUsersRawLabels) ? [...window.dailyUsersRawLabels] : [];
                     dataNums = Array.isArray(window.dailyUsersData) ? window.dailyUsersData.map(v => Number(v || 0)) : [];
                     console.log('Weekly data loaded:', {labels, rawLabels, dataNums});
+                } else if (period === 'daily') {
+                    const dateEl = document.getElementById('dailyDateFilter');
+                    const selectedDate = dateEl ? dateEl.value : new Date().toISOString().split('T')[0];
+                    
+                    console.log('Fetching daily data for:', selectedDate);
+                    
+                    const res = await fetch(`/dashboard/daily-user-data-by-hour?date=${encodeURIComponent(selectedDate)}`, { 
+                        credentials: 'same-origin',
+                        signal: AbortSignal.timeout(10000)
+                    });
+                    
+                    if (!res.ok) {
+                        console.error('Fetch failed with status:', res.status);
+                        throw new Error('Failed to fetch daily data');
+                    }
+                    
+                    const json = await res.json();
+                    console.log('Daily data received:', json);
+                    
+                    labels = Array.isArray(json.labels) ? [...json.labels] : [];
+                    rawLabels = labels;
+                    dataNums = Array.isArray(json.data) ? json.data.map(v => Number(v || 0)) : [];
+                    console.log('Daily data processed:', {labels, dataNums});
                 } else {
                     const monthEl = document.getElementById('userChartMonthFilter');
                     const yearEl = document.getElementById('userChartYearFilter');
@@ -604,16 +632,25 @@
                 const modeSelect = document.getElementById('userChartMode');
                 const monthSelect = document.getElementById('userChartMonthFilter');
                 const yearSelect = document.getElementById('userChartYearFilter');
+                const dateSelect = document.getElementById('dailyDateFilter');
 
-                console.log('Setting up event listeners', {modeSelect, monthSelect, yearSelect});
+                console.log('Setting up event listeners', {modeSelect, monthSelect, yearSelect, dateSelect});
 
                 if (modeSelect) {
                     modeSelect.addEventListener('change', async function(e) {
                         console.log('Mode changed to:', e.target.value);
                         const isMonthly = e.target.value === 'monthly';
+                        const isDaily = e.target.value === 'daily';
                         
                         if (monthSelect) monthSelect.classList.toggle('hidden', !isMonthly);
                         if (yearSelect) yearSelect.classList.toggle('hidden', !isMonthly);
+                        if (dateSelect) {
+                            dateSelect.classList.toggle('hidden', !isDaily);
+                            // Set default date to today
+                            if (isDaily && !dateSelect.value) {
+                                dateSelect.valueAsDate = new Date();
+                            }
+                        }
                         
                         // Reset loading flag
                         window.isLoadingChart = false;
@@ -625,6 +662,18 @@
                     console.log('Mode select listener attached');
                 } else {
                     console.error('userChartMode element not found!');
+                }
+
+                if (dateSelect) {
+                    dateSelect.addEventListener('change', async function() {
+                        console.log('Date changed to:', this.value);
+                        if (modeSelect && modeSelect.value === 'daily') {
+                            window.isLoadingChart = false;
+                            await new Promise(resolve => setTimeout(resolve, 150));
+                            await loadDailyUsers('daily');
+                        }
+                    });
+                    console.log('Date select listener attached');
                 }
 
                 if (monthSelect) {

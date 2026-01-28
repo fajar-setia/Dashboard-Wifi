@@ -684,4 +684,47 @@ class DashboardController extends Controller
             return response()->json(['error' => 'Unable to fetch weekly data'], 500);
         }
     }
+
+    public function getDailyUserDataByHour(Request $request)
+    {
+        try {
+            $date = $request->query('date', now()->toDateString());
+
+            // Get hour labels (0-23)
+            $hourLabels = [];
+            for ($i = 0; $i < 24; $i++) {
+                $hourLabels[] = str_pad($i, 2, '0', STR_PAD_LEFT) . ':00';
+            }
+
+            // Ambil data per jam dari daily_user_stats_by_hour jika ada, atau aggregate dari log
+            // Untuk sekarang kita return data dummy per jam
+            $hourlyData = array_fill(0, 24, 0);
+
+            // Coba ambil dari database jika ada tabel hour-based stats
+            try {
+                $stats = DB::table('daily_user_stats_hourly')
+                    ->where('date', $date)
+                    ->orderBy('hour')
+                    ->get();
+
+                if ($stats->count() > 0) {
+                    foreach ($stats as $stat) {
+                        $hourlyData[(int) $stat->hour] = (int) $stat->user_count;
+                    }
+                }
+            } catch (\Throwable $e) {
+                Log::warning('daily_user_stats_hourly table might not exist: ' . $e->getMessage());
+                // Fallback: return empty data with zeros
+            }
+
+            return response()->json([
+                'labels' => $hourLabels,
+                'data' => $hourlyData,
+                'date' => $date
+            ]);
+        } catch (\Throwable $e) {
+            Log::error('DashboardController@getDailyUserDataByHour : ' . $e->getMessage());
+            return response()->json(['error' => 'Unable to fetch daily hour data'], 500);
+        }
+    }
 }
