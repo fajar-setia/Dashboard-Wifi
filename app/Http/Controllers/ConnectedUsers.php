@@ -6,15 +6,22 @@ use Illuminate\Http\Request;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Pagination\LengthAwarePaginator;
+use App\Services\OnuApiService;
 
 class ConnectedUsers extends Controller
 {
     public function index(Request $request)
     {
         try {
-            $response = Http::timeout(10)->get(config('services.onu_api.url'));
+            // Gunakan OnuApiService untuk mendapatkan data yang sudah terstruktur
+            $onuService = app(OnuApiService::class);
+            $raw = $onuService->getAllOnuWithClients();
 
-            if (!is_object($response) || !method_exists($response, 'successful') || ! $response->successful()) {
+            // Validasi bahwa $raw adalah array
+            if (!is_array($raw)) {
+                \Log::warning('ConnectedUsers: API response bukan array', [
+                    'type' => gettype($raw),
+                ]);
                 $perPage = $request->get('perPage', 5);
                 $page = $request->get('page', 1);
 
@@ -31,12 +38,12 @@ class ConnectedUsers extends Controller
 
                 return view('connectedUsers.connectUsers', [
                     'aps' => $emptyPaginator,
-                    'error' => 'Gagal mengambil data dari API',
+                    'error' => 'Format api nya ndak valid lek',
                 ]);
             }
 
-            // Process API JSON without collecting everything into memory.
-            $raw = $response->json();
+            // Process API JSON without collecting everything into memory. mungkin karena terlalu raw jadi lebih sulit di parse 
+	    // $raw = $response->json();
 
             $search = $request->get('search');
             $perPage = (int) $request->get('perPage', 5);
@@ -135,7 +142,8 @@ class ConnectedUsers extends Controller
                 'search' => $search ?? null,
             ]);
 
-        } catch (ConnectionException) {
+        } catch (\Throwable $e) {
+            \Log::error('ConnectedUsers error: ' . $e->getMessage());
             $perPage = $request->get('perPage', 5);
             $page = $request->get('page', 1);
 
@@ -152,7 +160,7 @@ class ConnectedUsers extends Controller
 
             return view('connectedUsers.connectUsers', [
                 'aps' => $emptyPaginator,
-                'error' => 'Koneksi ke API timeout',
+		'error' => 'Gagal mengambil data: ' . $e->getMessage(),
             ]);
         }
     }
