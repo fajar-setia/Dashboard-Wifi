@@ -39,44 +39,37 @@
         </div>
 
         <!-- Charts Section -->
-        <div class="grid gap-4 lg:grid-cols-3 rounded-xl">
-            <!-- KIRI -->
+        <div class="grid gap-4 lg:grid-cols-1 rounded-xl">
+            <!-- Chart Rekap Total User -->
             <div
-                class="lg:col-span-1 bg-slate-800/50 backdrop-blur rounded-xl p-4 border border-slate-700/50 flex flex-col shadow-xl shadow-black/20">
-                <p class="text-white font-semibold mb-3 text-center">Kapasitas User</p>
-                <div class="relative w-full h-56">
-                    <canvas id="userChart" class="absolute inset-0 h-full block"></canvas>
+                class="bg-slate-800/50 backdrop-blur rounded-xl p-4 border border-slate-700/50 flex flex-col shadow-xl shadow-black/20">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-white font-semibold">Rekap Total User</h3>
+                    <div id="userChartDailyControls" class="flex items-center gap-2 pointer-events-auto relative z-10">
+                        <!-- Mode -->
+                        <select id="userChartMode"
+                            class="bg-slate-700 border border-slate-600 text-gray-200 text-sm rounded-lg px-3 py-1.5 cursor-pointer">
+                            <option value="weekly">Mingguan</option>
+                            <option value="daily">Harian</option>
+                            <option value="monthly">Bulanan</option>
+                        </select>
+
+                        <!-- Tanggal untuk Harian -->
+                        <input type="date" id="dailyDateFilter"
+                            class="hidden bg-slate-700 border border-slate-600 text-gray-200 text-sm rounded-lg px-3 py-1.5 cursor-pointer">
+
+                        <!-- Tahun -->
+                        <select id="userChartYearFilter"
+                            class="hidden bg-slate-700 border border-slate-600 text-gray-200 text-sm rounded-lg px-3 py-1.5 cursor-pointer">
+                        </select>
+
+                        <!-- Bulan -->
+                        <select id="userChartMonthFilter"
+                            class="hidden bg-slate-700 border border-slate-600 text-gray-200 text-sm rounded-lg px-3 py-1.5 cursor-pointer">
+                        </select>
+                    </div>
                 </div>
-            </div>
-
-            <!-- KANAN -->
-            <div
-                class="lg:col-span-2 bg-slate-800/50 backdrop-blur rounded-xl p-4 border border-slate-700/50 flex flex-col shadow-xl shadow-black/20">
-                <h3 class="text-white font-semibold mb-3">Rekap Total User</h3>
-                <div id="userChartDailyControls" class="flex justify-end items-center gap-2 mb-3 pointer-events-auto relative z-10">
-                <!-- Mode -->
-                <select id="userChartMode"
-                    class="bg-slate-700 border border-slate-600 text-gray-200 text-sm rounded-lg px-3 py-1.5 cursor-pointer">
-                    <option value="weekly">Mingguan</option>
-                    <option value="daily">Harian</option>
-                    <option value="monthly">Bulanan</option>
-                </select>
-
-                <!-- Tanggal untuk Harian -->
-                <input type="date" id="dailyDateFilter"
-                    class="hidden bg-slate-700 border border-slate-600 text-gray-200 text-sm rounded-lg px-3 py-1.5 cursor-pointer">
-
-                <!-- Tahun -->
-                <select id="userChartYearFilter"
-                    class="hidden bg-slate-700 border border-slate-600 text-gray-200 text-sm rounded-lg px-3 py-1.5 cursor-pointer">
-                </select>
-
-                <!-- Bulan -->
-                <select id="userChartMonthFilter"
-                    class="hidden bg-slate-700 border border-slate-600 text-gray-200 text-sm rounded-lg px-3 py-1.5 cursor-pointer">
-                </select>
-            </div>
-                <div class="w-full h-56 relative">
+                <div class="w-full h-80 relative">
                     <canvas id="userChartDaily" class="h-full block"></canvas>
                 </div>
             </div>
@@ -352,83 +345,6 @@
         }
 
         // User Capacity Chart
-        function initUserCapacityChart() {
-            const el = document.getElementById('userChart');
-            if (!el) return;
-
-            const ctx = el.getContext('2d');
-            const onlineGradient = ctx.createLinearGradient(0, 0, 0, 200);
-            onlineGradient.addColorStop(0, 'rgba(59,130,246,0.9)');
-            onlineGradient.addColorStop(1, 'rgba(59,130,246,0.35)');
-
-            const labels = ['Kapasitas User'];
-            const capacityVal = Number(@json($userCapacity ?? 0));
-
-            if (window.userCapacityChart) {
-                window.userCapacityChart.destroy();
-            }
-
-            window.userCapacityChart = new Chart(ctx, {
-                type: 'bar',
-                data: {
-                    labels: labels,
-                    datasets: [{
-                        label: 'Kapasitas',
-                        data: [capacityVal],
-                        backgroundColor: onlineGradient,
-                        borderColor: '#60a5fa',
-                        borderWidth: 1,
-                        borderRadius: 10,
-                        barThickness: 108,
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    animation: false,
-                    scales: {
-                        y: { 
-                            beginAtZero: true, 
-                            ticks: { 
-                                stepSize: 1, 
-                                precision: 0, 
-                                callback: v => Math.round(v), 
-                                color: '#cbd5f5', 
-                                padding: 4, 
-                                font: { size: 11 } 
-                            }, 
-                            grid: { 
-                                color: 'rgba(148,163,184,0.08)', 
-                                drawBorder: false 
-                            } 
-                        },
-                        x: { 
-                            ticks: { 
-                                color: '#94a3b8', 
-                                font: { size: 12 } 
-                            }, 
-                            grid: { display: false } 
-                        }
-                    },
-                    plugins: {
-                        legend: { display: false },
-                        tooltip: {
-                            backgroundColor: '#020617',
-                            borderColor: '#1e293b',
-                            borderWidth: 1,
-                            titleColor: '#e5e7eb',
-                            bodyColor: '#93c5fd',
-                            padding: 10,
-                            displayColors: false,
-                            callbacks: {
-                                label: (ctx) => `${ctx.raw ?? 0} users`
-                            }
-                        }
-                    }
-                }
-            });
-        }
-
         // Load Daily Users Chart
         async function loadDailyUsers(period = 'weekly') {
             if (window.isLoadingChart) {
@@ -624,7 +540,6 @@
             console.log('DOM Loaded - Initializing charts');
             
             initializeFilters();
-            initUserCapacityChart();
             loadDailyUsers('weekly');
 
             // Setup event listeners with delay
