@@ -14,6 +14,9 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware): void {
         //
     })
+    ->withSchedule(function ($schedule) {
+        require __DIR__.'/../app/Console/schedule.php';
+    })
     ->withExceptions(function (Exceptions $exceptions) {
 
         $exceptions->render(function (
