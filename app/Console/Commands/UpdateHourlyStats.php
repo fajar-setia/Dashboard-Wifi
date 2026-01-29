@@ -10,7 +10,7 @@ use App\Services\OnuApiService;
 class UpdateHourlyStats extends Command
 {
     protected $signature = 'update:hourly-stats';
-    protected $description = 'Update hourly user stats from API every hour';
+    protected $description = 'Update hourly user stats from API (runs every minute to capture current hour data in real-time)';
 
     public function handle()
     {
