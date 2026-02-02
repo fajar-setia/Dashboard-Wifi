@@ -34,6 +34,63 @@ class DashboardController extends Controller
 
             $totalAp = is_array($onus) ? count($onus) : 0;
 
+            $weeklyLocationByDay = [];
+            $today = now();
+            $monday = $today->copy()->startOfWeek();
+
+            for ($i = 0; $i < 7; $i++) {
+                $date = $monday->copy()->addDays($i)->toDateString();
+                $weeklyLocationByDay[$date] = [];
+            }
+
+            /**
+             * REALTIME: hitung dari ONU (bukan DB)
+             * Semua dianggap "hari ini"
+             */
+            $locationBuckets = [];
+
+            foreach ($connections as $c) {
+                $sn = strtoupper(trim($c['sn'] ?? ''));
+                if ($sn === '') continue;
+
+                $info = $ontMap[$sn] ?? null;
+                if (!$info || empty($info['location'])) continue;
+
+                $clients = array_merge(
+                    $c['wifiClients']['5G'] ?? [],
+                    $c['wifiClients']['2_4G'] ?? [],
+                    $c['wifiClients']['unknown'] ?? []
+                );
+
+                $macs = [];
+                foreach ($clients as $cl) {
+                    $mac = strtoupper(trim($cl['wifi_terminal_mac'] ?? ''));
+                    $mac = preg_replace('/[^A-F0-9:]/i', '', $mac);
+                    if ($mac !== '') {
+                        $macs[$mac] = true;
+                    }
+                }
+
+                $key = $info['location'].'|'.$info['kemantren'];
+
+                if (!isset($locationBuckets[$key])) {
+                    $locationBuckets[$key] = [
+                        'location' => $info['location'],
+                        'kemantren' => $info['kemantren'],
+                        'total' => 0,
+                    ];
+                }
+
+                $locationBuckets[$key]['total'] += count($macs);
+            }
+
+            /**
+             * Masukkan ke hari INI saja (realtime)
+             */
+            $todayKey = now()->toDateString();
+            $weeklyLocationByDay[$todayKey] = array_values($locationBuckets);
+
+
             // Hitung unique users berdasarkan MAC address untuk menghindari duplikasi
             $uniqueMacSet = [];
             if (is_array($connections)) {
