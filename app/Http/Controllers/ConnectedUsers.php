@@ -43,7 +43,7 @@ class ConnectedUsers extends Controller
             }
 
             // Process API JSON without collecting everything into memory. mungkin karena terlalu raw jadi lebih sulit di parse 
-	    // $raw = $response->json();
+            // $raw = $response->json();
 
             $search = $request->get('search');
             $perPage = (int) $request->get('perPage', 5);
@@ -105,14 +105,15 @@ class ConnectedUsers extends Controller
 
                     $found = true;
                     foreach ($terms as $t) {
-                        if ($t === '') continue;
+                        if ($t === '')
+                            continue;
                         if (strpos($hay, $t) === false) {
                             $found = false;
                             break;
                         }
                     }
 
-                    if (! $found) {
+                    if (!$found) {
                         continue;
                     }
                 }
@@ -160,8 +161,52 @@ class ConnectedUsers extends Controller
 
             return view('connectedUsers.connectUsers', [
                 'aps' => $emptyPaginator,
-		'error' => 'Gagal mengambil data: ' . $e->getMessage(),
+                'error' => 'Gagal mengambil data: ' . $e->getMessage(),
             ]);
+        }
+    }
+
+    public function api(Request $request)
+    {
+        try {
+            $onuService = app(OnuApiService::class);
+            $raw = $onuService->getAllOnuWithClients();
+
+            if (!is_array($raw)) {
+                return response()->json(['error' => 'Invalid API response'], 500);
+            }
+
+            $ontMap = cache()->get('ont_map_paket_all', []);
+            $data = [];
+
+            foreach ($raw as $ap) {
+                $rawSn = (string) ($ap['sn'] ?? '');
+                $snTrim = trim($rawSn);
+                $snKey1 = strtoupper($snTrim);
+                $snKey2 = preg_replace('/[^A-Z0-9]/', '', $snKey1);
+
+                $info = null;
+                if ($snKey1 && isset($ontMap[$snKey1])) {
+                    $info = $ontMap[$snKey1];
+                } elseif ($snKey2 && isset($ontMap[$snKey2])) {
+                    $info = $ontMap[$snKey2];
+                }
+
+                $data[] = [
+                    'Lokasi' => $info['location'] ?? ($ap['location'] ?? '-'),
+                    'SN' => $snKey1 !== '' ? $snKey1 : ($ap['sn'] ?? '-'),
+                    'Model' => $ap['model'] ?? '-',
+                    'Kemantren' => $info['kemantren'] ?? ($ap['kemantren'] ?? '-'),
+                    'Kelurahan' => $info['kelurahan'] ?? ($ap['kelurahan'] ?? '-'),
+                    'RT/RW' => ($info['rt'] ?? '-') . ' / ' . ($info['rw'] ?? '-'),
+                    'State' => ucfirst($ap['state'] ?? 'unknown'),
+                ];
+            }
+
+            return response()->json($data);
+
+        } catch (\Throwable $e) {
+            return response()->json(['error' => $e->getMessage()], 500);
         }
     }
 }
