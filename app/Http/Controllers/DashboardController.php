@@ -36,6 +36,9 @@ class DashboardController extends Controller
             86400,
             fn() => $this->readOntMap()
         );
+            $realtimeLocationStats =
+            $this->buildRealtimeStats($connections, $ontMap);
+
 
             $totalAp = is_array($onus) ? count($onus) : 0;
 
@@ -48,10 +51,6 @@ class DashboardController extends Controller
                 $weeklyLocationByDay[$date] = [];
             }
 
-            /**
-             * REALTIME: hitung dari ONU (bukan DB)
-             * Semua dianggap "hari ini"
-             */
             $locationBuckets = [];
 
             foreach ($connections as $c) {
@@ -436,7 +435,7 @@ class DashboardController extends Controller
             'currentYear'
         ));
     }
-
+    
     /**
      * Return monthly aggregated location data as JSON for given month/year
      */
@@ -539,47 +538,205 @@ class DashboardController extends Controller
         return response()->json(array_values($result));
     }
 
-    private function buildRealtimeLocationStats(array $connections, array $ontMap): array
+    public function updateRealtimeLocationStats()
+{
+    try {
+        $onuService = app(\App\Services\OnuApiService::class);
+        $connections = $onuService->getAllOnuWithClients();
+        
+        $ontMap = cache()->remember(
+            'ont_map_paket_all',
+            86400,
+            fn() => $this->readOntMap()
+        );
+
+        $stats = $this->buildRealtimeStats($connections, $ontMap);
+        
+        // Simpan ke database untuk hari ini
+        $today = now()->toDateString();
+        
+        DB::beginTransaction();
+        try {
+            foreach ($stats as $stat) {
+                DB::table('daily_location_stats')->updateOrInsert(
+                    [
+                        'date' => $today,
+                        'location' => $stat['location'],
+                        'kemantren' => $stat['kemantren'],
+                        'sn' => $stat['sn'] ?? null,
+                    ],
+                    [
+                        'user_count' => $stat['user_count'],
+                        'updated_at' => now(),
+                    ]
+                );
+            }
+            DB::commit();
+            
+            Log::info('Realtime location stats updated', [
+                'date' => $today,
+                'locations_count' => count($stats),
+                'total_users' => array_sum(array_column($stats, 'user_count'))
+            ]);
+            
+        } catch (\Throwable $e) {
+            DB::rollBack();
+            throw $e;
+        }
+
+        return response()->json([
+            'success' => true,
+            'data' => $stats,
+            'timestamp' => now()->toIso8601String(),
+            'total_locations' => count($stats),
+            'total_users' => array_sum(array_column($stats, 'user_count'))
+        ]);
+        
+    } catch (\Throwable $e) {
+        Log::error('updateRealtimeLocationStats error: ' . $e->getMessage());
+        return response()->json([
+            'success' => false,
+            'error' => $e->getMessage()
+        ], 500);
+    }
+}
+
+    public function getWeeklyLocationData(Request $request)
+    {
+        try {
+            $today = now();
+            $monday = $today->copy()->startOfWeek();
+            
+            $kemantren = $request->query('kemantren', null);
+            $search = $request->query('search', null);
+            $top = (int) $request->query('top', 8); // Default top 8 locations
+            
+            $weekDates = [];
+            for ($i = 0; $i < 7; $i++) {
+                $weekDates[] = $monday->copy()->addDays($i)->toDateString();
+            }
+            
+            // Query untuk mendapatkan total per location across the week
+            $query = DB::table('daily_location_stats')
+                ->whereBetween('date', [$weekDates[0], $weekDates[6]])
+                ->selectRaw('location, kemantren, SUM(user_count) as total_week')
+                ->groupBy('location', 'kemantren');
+            
+            if ($kemantren && $kemantren !== 'all') {
+                $query->where('kemantren', $kemantren);
+            }
+            
+            if ($search) {
+                $query->havingRaw("LOWER(location) LIKE ?", ['%' . strtolower($search) . '%']);
+            }
+            
+            // Get top locations
+            $topLocations = $query->orderByDesc('total_week')
+                ->limit($top)
+                ->get()
+                ->pluck('location')
+                ->toArray();
+            
+            if (empty($topLocations)) {
+                return response()->json([
+                    'labels' => ['Senin','Selasa','Rabu','Kamis','Jumat','Sabtu','Minggu'],
+                    'dates' => $weekDates,
+                    'data' => [],
+                    'isEmpty' => true
+                ]);
+            }
+            
+            // Get daily data for top locations
+            $result = [];
+            
+            foreach ($weekDates as $date) {
+                $query = DB::table('daily_location_stats')
+                    ->where('date', $date)
+                    ->whereIn('location', $topLocations)
+                    ->selectRaw('location, kemantren, SUM(user_count) as total')
+                    ->groupBy('location', 'kemantren');
+                
+                if ($kemantren && $kemantren !== 'all') {
+                    $query->where('kemantren', $kemantren);
+                }
+                
+                $dayData = $query->get()
+                    ->map(fn($r) => [
+                        'location' => $r->location,
+                        'kemantren' => $r->kemantren,
+                        'total' => (int) $r->total,
+                    ])
+                    ->toArray();
+                
+                $result[$date] = $dayData;
+            }
+            
+            return response()->json([
+                'labels' => ['Senin','Selasa','Rabu','Kamis','Jumat','Sabtu','Minggu'],
+                'dates' => $weekDates,
+                'data' => $result,
+                'topLocations' => $topLocations,
+                'isEmpty' => false
+            ]);
+            
+        } catch (\Throwable $e) {
+            Log::error('getWeeklyLocationData error: ' . $e->getMessage());
+            return response()->json(['error' => 'Unable to fetch data'], 500);
+        }
+    }
+
+    private function buildRealtimeStats(array $connections, array $ontMap): array
     {
         $globalMac = [];
-        $buckets = [];
-
+        $result = [];
+        
         foreach ($connections as $c) {
             $sn = strtoupper(trim($c['sn'] ?? ''));
-            if ($sn === '') continue;
-
-            $info = $ontMap[$sn] ?? null;
-            if (!$info || empty($info['location'])) continue;
-
+            if (!$sn || !isset($ontMap[$sn])) continue;
+            
+            $info = $ontMap[$sn];
+            if (empty($info['location'])) continue;
+            
+            // Use SN as unique key to track per AP
+            $key = $sn;
+            
+            if (!isset($result[$key])) {
+                $result[$key] = [
+                    'sn' => $sn,
+                    'location' => $info['location'],
+                    'kemantren' => $info['kemantren'],
+                    'user_count' => 0,
+                    'macs' => []
+                ];
+            }
+            
             $clients = array_merge(
                 $c['wifiClients']['5G'] ?? [],
                 $c['wifiClients']['2_4G'] ?? [],
                 $c['wifiClients']['unknown'] ?? []
             );
-
+            
             foreach ($clients as $cl) {
                 $mac = strtoupper(trim($cl['wifi_terminal_mac'] ?? ''));
                 $mac = preg_replace('/[^A-F0-9:]/', '', $mac);
-                if ($mac === '' || isset($globalMac[$mac])) continue;
-
-                $globalMac[$mac] = true;
-
-                $key = $info['location'].'|'.$info['kemantren'];
-
-                if (!isset($buckets[$key])) {
-                    $buckets[$key] = [
-                        'location' => $info['location'],
-                        'kemantren' => $info['kemantren'],
-                        'total' => 0,
-                    ];
+                
+                if (!$mac) continue;
+                
+                // Track unique MAC per location (not globally)
+                if (!isset($result[$key]['macs'][$mac])) {
+                    $result[$key]['macs'][$mac] = true;
+                    $result[$key]['user_count']++;
                 }
-
-                $buckets[$key]['total']++;
             }
         }
-
-        return array_values($buckets);
+        
+        // Remove macs array before returning (just for counting)
+        return array_map(function($item) {
+            unset($item['macs']);
+            return $item;
+        }, array_values($result));
     }
+
 
 
     /* ---------- Mapping SN -> lokasi (pakai CSV lokal ACSfiks.csv) ---------- */

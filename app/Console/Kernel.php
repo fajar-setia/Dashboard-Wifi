@@ -16,14 +16,33 @@ class Kernel extends ConsoleKernel
         $schedule->command('update:hourly-stats')
             ->everyMinute()
             ->timezone('Asia/Jakarta')
-            ->runInBackground();
+            ->withoutOverlapping(5) // Prevent overlap with 5 min timeout
+            ->runInBackground()
+            ->appendOutputTo(storage_path('logs/cron-hourly-stats.log'));
+
+        // Collect realtime location stats every 5 minutes
+        $schedule->command('stats:collect-realtime')
+            ->everyFiveMinutes()
+            ->timezone('Asia/Jakarta')
+            ->withoutOverlapping(10) // Prevent overlap with 10 min timeout
+            ->runInBackground()
+            ->appendOutputTo(storage_path('logs/cron-realtime-stats.log'));
 
         // Run the daily user stats aggregation at midnight Asia/Jakarta
         $schedule->command('stats:update-daily-users')
             ->dailyAt('00:00')
             ->timezone('Asia/Jakarta')
+            ->withoutOverlapping()
+            ->runInBackground()
+            ->appendOutputTo(storage_path('logs/cron-daily-stats.log'));
+
+        // Cleanup old stats (optional - keep last 90 days)
+        $schedule->command('stats:cleanup-old')
+            ->daily()
+            ->at('01:00')
+            ->timezone('Asia/Jakarta')
             ->runInBackground();
-        }
+    }
 
     /**
      * Register the commands for the application.

@@ -124,6 +124,29 @@
                         class="w-full px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded text-white text-sm font-medium">
                         Filter
                     </button>
+
+                    <!-- TAMBAHAN BARU: Status & Controls -->
+                    <div class="border-t border-slate-600 pt-4 mt-4 space-y-3">
+                        <div class="flex items-center justify-between">
+                            <span class="text-gray-400 text-xs">Status Update</span>
+                            <div id="chartLoadingIndicator" class="hidden">
+                                <div class="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-400"></div>
+                            </div>
+                        </div>
+                        
+                        <div id="lastUpdateTime" class="text-gray-400 text-xs">
+                            Belum ada update
+                        </div>
+
+                        <button id="manualRefreshBtn" 
+                            class="w-full px-3 py-2 bg-slate-600 hover:bg-slate-500 rounded text-white text-sm font-medium flex items-center justify-center gap-2"
+                            title="Refresh manual">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                            </svg>
+                            <span>Refresh Sekarang</span>
+                        </button>
+                    </div>
                 </div>
 
                 <!-- Kanan: Chart & Kontrol -->
@@ -136,14 +159,7 @@
                                 <option value="weekly">Mingguan</option>
                                 <option value="monthly">Bulanan</option>
                             </select>
-                            <select id="locationYearFilter"
-                                class="px-3 py-1.5 bg-slate-700 border border-slate-600 text-gray-200 text-sm rounded-lg focus:ring-blue-500 hidden">
-                                @for ($year = $currentYear; $year >= $currentYear - 2; $year--)
-                                    <option value="{{ $year }}" {{ $year == $currentYear ? 'selected' : '' }}>
-                                        {{ $year }}</option>
-                                @endfor
-                            </select>
-                            <select id="locationMonthFilter" onchange="updateLocationChart()"
+                            <select id="monthFilter" onchange="updateLocationChart()"
                                 class="px-3 py-1.5 bg-slate-700 border border-slate-600 text-gray-200 text-sm rounded-lg focus:ring-blue-500 hidden">
                                 @foreach ($months as $num => $name)
                                     <option value="{{ $num }}" {{ $num == $currentMonth ? 'selected' : '' }}>
@@ -159,6 +175,9 @@
                             </select>
                         </div>
                     </div>
+
+                    <!-- TAMBAHAN BARU: Notification Area -->
+                    <div id="chartNotification" class="hidden px-4 py-2 rounded text-white text-sm"></div>
 
                     <div class="bg-slate-700/50 rounded-lg p-4 border border-slate-600/50">
                         <canvas id="locationChart" class="w-full" style="max-height: 300px;"></canvas>
@@ -180,7 +199,6 @@
 
             </div>
         </div>
-
         <!-- Rekap User Online Per Lokasi -->
         <div class="bg-slate-800/50 backdrop-blur rounded-xl p-6 shadow-xl border border-slate-700/50">
 
