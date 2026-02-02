@@ -31,6 +31,12 @@ class DashboardController extends Controller
 
             // Get complete data with WiFi clients (cached 5 min)
             $connections = $onuService->getAllOnuWithClients();
+            
+            $ontMap = cache()->remember(
+                'ont_map_paket_all',
+                86400,
+                fn() => $this->readOntMap()
+            );
 
             $totalAp = is_array($onus) ? count($onus) : 0;
 
