@@ -31,12 +31,11 @@ class DashboardController extends Controller
 
             // Get complete data with WiFi clients (cached 5 min)
             $connections = $onuService->getAllOnuWithClients();
-            
             $ontMap = cache()->remember(
-                'ont_map_paket_all',
-                86400,
-                fn() => $this->readOntMap()
-            );
+            'ont_map_paket_all',
+            86400,
+            fn() => $this->readOntMap()
+        );
 
             $totalAp = is_array($onus) ? count($onus) : 0;
 
@@ -539,6 +538,49 @@ class DashboardController extends Controller
 
         return response()->json(array_values($result));
     }
+
+    private function buildRealtimeLocationStats(array $connections, array $ontMap): array
+    {
+        $globalMac = [];
+        $buckets = [];
+
+        foreach ($connections as $c) {
+            $sn = strtoupper(trim($c['sn'] ?? ''));
+            if ($sn === '') continue;
+
+            $info = $ontMap[$sn] ?? null;
+            if (!$info || empty($info['location'])) continue;
+
+            $clients = array_merge(
+                $c['wifiClients']['5G'] ?? [],
+                $c['wifiClients']['2_4G'] ?? [],
+                $c['wifiClients']['unknown'] ?? []
+            );
+
+            foreach ($clients as $cl) {
+                $mac = strtoupper(trim($cl['wifi_terminal_mac'] ?? ''));
+                $mac = preg_replace('/[^A-F0-9:]/', '', $mac);
+                if ($mac === '' || isset($globalMac[$mac])) continue;
+
+                $globalMac[$mac] = true;
+
+                $key = $info['location'].'|'.$info['kemantren'];
+
+                if (!isset($buckets[$key])) {
+                    $buckets[$key] = [
+                        'location' => $info['location'],
+                        'kemantren' => $info['kemantren'],
+                        'total' => 0,
+                    ];
+                }
+
+                $buckets[$key]['total']++;
+            }
+        }
+
+        return array_values($buckets);
+    }
+
 
     /* ---------- Mapping SN -> lokasi (pakai CSV lokal ACSfiks.csv) ---------- */
     private function readOntMap(): array
