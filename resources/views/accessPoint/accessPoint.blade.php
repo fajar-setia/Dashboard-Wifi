@@ -115,9 +115,11 @@
                                         </div>
                                     </td>
 
-                                    <td class="py-2">
+                                    <td class="py-2
+                                        {{ $d['lokasi'] === 'Lokasi Tidak Diketahui' ? 'text-gray-500 opacity-50 italic' : '' }}">
                                         {{ $d['lokasi'] }}
                                     </td>
+
 
                                     <td class="py-2">
                                         @if ($d['state'] === 'online')

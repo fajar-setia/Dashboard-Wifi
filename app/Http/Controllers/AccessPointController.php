@@ -131,7 +131,7 @@ class AccessPointController extends Controller
                     $location['lokasi'] ?? null,
                     $location['kelurahan'] ?? null,
                     $location['kemantren'] ?? null,
-                ])->filter()->implode(' - ') ?: '-',
+                ])->filter()->implode('-') ?: 'Lokasi Tidak Diketahui',
                 'wifi_user_count' => $userCount,
                 'wifiClients' => $connect['wifiClients'] ?? [],
             ];
