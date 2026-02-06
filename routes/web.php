@@ -154,6 +154,10 @@ Route::get('/connectUser', [ConnectedUsers::class, 'index'])
     ->middleware('auth')
     ->name('connectUser');
 
+
+Route::get('/api/ont', [ConnectedUsers::class, 'api'])
+    ->name('api.ont');
+
 Route::get('/alert', [AlertController::class, 'index'])
     ->middleware('auth')
     ->name('alert');
