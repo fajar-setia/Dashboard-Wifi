@@ -2,21 +2,31 @@
 
 use App\Http\Controllers\ProfileController;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Auth;
+
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\AccessPointController;
 use App\Http\Controllers\ConnectedUsers;
 use App\Http\Controllers\AlertController;
 
-// Route::get('/', function () {
-//     return view('welcome');
-// });
-
+/*
+|--------------------------------------------------------------------------
+| Root
+|--------------------------------------------------------------------------
+*/
 Route::get('/', function () {
     return redirect()->route('login');
 });
 
-// Dashboard routes
-Route::prefix('dashboard')->group(function () {
+/*
+|--------------------------------------------------------------------------
+| Dashboard (PROTECTED BY AUTH)
+|--------------------------------------------------------------------------
+*/
+Route::middleware(['auth'])->prefix('dashboard')->group(function () {
 
     // Main dashboard
     Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
@@ -48,10 +58,10 @@ Route::prefix('dashboard')->group(function () {
     // Manual trigger realtime stats collection
     Route::post('/trigger-realtime-stats', function () {
         try {
+
             Artisan::call('stats:collect-realtime');
             $output = Artisan::output();
 
-            // Parse output untuk mendapatkan summary
             $lines = explode("\n", trim($output));
 
             return response()->json([
@@ -60,7 +70,9 @@ Route::prefix('dashboard')->group(function () {
                 'output' => $lines,
                 'timestamp' => now()->toIso8601String()
             ]);
+
         } catch (\Throwable $e) {
+
             Log::error('Manual trigger realtime stats failed', [
                 'error' => $e->getMessage(),
             ]);
@@ -75,6 +87,7 @@ Route::prefix('dashboard')->group(function () {
     // Stats monitoring endpoint
     Route::get('/stats-monitor', function () {
         try {
+
             $today = now('Asia/Jakarta')->toDateString();
 
             $locationStats = DB::table('daily_location_stats')
@@ -104,30 +117,65 @@ Route::prefix('dashboard')->group(function () {
                 ],
                 'timestamp' => now()->toIso8601String(),
             ]);
+
         } catch (\Throwable $e) {
+
             return response()->json([
                 'error' => $e->getMessage()
             ], 500);
         }
     })->name('dashboard.stats-monitor');
+
 });
 
+/*
+|--------------------------------------------------------------------------
+| Profile
+|--------------------------------------------------------------------------
+*/
 Route::middleware('auth')->group(function () {
+
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+
 });
 
+/*
+|--------------------------------------------------------------------------
+| Other Protected Pages
+|--------------------------------------------------------------------------
+*/
 Route::get('/access-point', [AccessPointController::class, 'index'])
     ->middleware(['auth', 'verified'])
     ->name('access-point');
 
 Route::get('/connectUser', [ConnectedUsers::class, 'index'])
+    ->middleware('auth')
     ->name('connectUser');
+
 
 Route::get('/api/ont', [ConnectedUsers::class, 'api'])
     ->name('api.ont');
 
-Route::get('/alert', [AlertController::class, 'index'])->name('alert');
+Route::get('/alert', [AlertController::class, 'index'])
+    ->middleware('auth')
+    ->name('alert');
 
+/*
+|--------------------------------------------------------------------------
+| Logout
+|--------------------------------------------------------------------------
+*/
+Route::post('/logout', function () {
+    Auth::logout();
+    return redirect()->route('login');
+})->name('logout');
+
+/*
+|--------------------------------------------------------------------------
+| Auth Routes
+|--------------------------------------------------------------------------
+*/
 require __DIR__ . '/auth.php';
+
