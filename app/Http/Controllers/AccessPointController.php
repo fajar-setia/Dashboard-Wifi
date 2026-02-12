@@ -76,7 +76,6 @@ class AccessPointController extends Controller
 
                 return [
                     $sn => [
-                        'nama_lokasi' => $r['nama_lokasi'] ?? null,
                         'kelurahan' => $r['kelurahan'] ?? null,
                         'kemantren' => $r['kemantren'] ?? null,
                         'ip' => $r['ip'] ?? null,
@@ -167,7 +166,6 @@ class AccessPointController extends Controller
 
             // Format lokasi
             $lokasiParts = collect([
-                $location['nama_lokasi'] ?? null,
                 $location['kelurahan'] ?? null,
                 $location['kemantren'] ?? null,
             ])->filter();
