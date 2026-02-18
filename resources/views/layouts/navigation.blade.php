@@ -1,33 +1,26 @@
-<nav class="fixed left-0 top-0 h-screen bg-gradient-to-b from-gray-900 via-gray-900 to-gray-800 border-r border-gray-700/50 flex flex-col transition-all duration-300 z-50 shadow-2xl"
+<nav class="fixed left-0 top-0 h-screen bg-gradient-to-b from-white via-gray-50 to-gray-100 dark:from-gray-900 dark:via-gray-900 dark:to-gray-800 border-r border-gray-200 dark:border-gray-700/50 flex flex-col transition-all duration-300 z-50 shadow-2xl"
     :class="{
         'w-64 translate-x-0': sidebarOpen,
         'w-20 translate-x-0': !sidebarOpen,
     }">
 
     <!-- Logo Section & Toggle Button -->
-    <div class="shrink-0 flex items-center justify-between p-6 border-b border-gray-700/50">
+    <div class="shrink-0 flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700/50">
         {{-- <a href="{{ route('dashboard') }}" :class="sidebarOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'"
             class="transition-opacity duration-300 w-32 block">
             <img src="{{ asset('images/logo.png') }}" alt="logo" width="128" height="32">
         </a> --}}
-<a href="{{ route('dashboard') }}" class="w-32 block">
-    <img
-        src="{{ asset('images/lifemedia-128.webp') }}"
-        width="128"
-        height="32"
-        alt="logo"
-        loading="lazy"
-        fetchpriority="low"
-        decoding="async"
-    >
-</a>
-
+        <a href="{{ route('dashboard') }}" class="w-32 block">
+            <img src="{{ asset('images/lifemedia-128.webp') }}" width="128" height="32" alt="logo" loading="lazy"
+                fetchpriority="low" decoding="async" class="transition-all duration-300 dark:filter-none"
+                :class="darkMode ? '' : 'invert'">
+        </a>
 
         <!-- Toggle Button - Hidden on mobile -->
         <button @click="sidebarOpen = !sidebarOpen"
-            class="hidden lg:block text-gray-400 hover:text-white hover:bg-gray-800 p-2 rounded-lg transition-all duration-200 ml-auto">
-            <svg class="w-5 h-5 transition-transform duration-300" :class="sidebarOpen ? '' : 'rotate-180'"
-                fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            class="hidden lg:block text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-200 dark:hover:bg-gray-800 p-2 rounded-lg transition-all duration-200 ml-auto">
+            <svg class="w-5 h-5 transition-transform duration-300" :class="sidebarOpen ? '' : 'rotate-180'" fill="none"
+                stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                     d="M11 19l-7-7 7-7m8 14l-7-7 7-7" />
             </svg>
@@ -35,7 +28,7 @@
 
         <!-- Mobile Menu Button -->
         <button @click="sidebarOpen = !sidebarOpen"
-            class="lg:hidden text-gray-400 hover:text-white hover:bg-gray-800 p-2 rounded-lg transition-all duration-200 ml-auto">
+            class="lg:hidden text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-200 dark:hover:bg-gray-800 p-2 rounded-lg transition-all duration-200 ml-auto">
             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path x-show="!sidebarOpen" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                     d="M4 6h16M4 12h16M4 18h16" />
@@ -49,7 +42,7 @@
     <div class="flex-1 px-3 py-6 space-y-1 overflow-y-auto custom-scrollbar">
         <!-- Overview -->
         <a href="{{ route('dashboard') }}"
-            class="relative rounded-lg px-4 py-3 flex items-center space-x-3 transition-all duration-200 group {{ request()->routeIs('dashboard') ? 'bg-gradient-to-r from-blue-600 to-blue-700 text-white shadow-lg shadow-blue-500/30' : 'text-gray-300 hover:bg-gray-800 hover:text-white' }}"
+            class="relative rounded-lg px-4 py-3 flex items-center space-x-3 transition-all duration-200 group {{ request()->routeIs('dashboard') ? 'bg-gradient-to-r from-blue-600 to-blue-700 text-white shadow-lg shadow-blue-500/30' : 'text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-white' }}"
             :class="sidebarOpen ? '' : 'justify-center'">
             <svg class="w-5 h-5 flex-shrink-0 transition-transform duration-200 group-hover:scale-110" fill="none"
                 stroke="currentColor" viewBox="0 0 24 24">
@@ -63,7 +56,7 @@
 
         <!-- Access Point -->
         <a href="{{ route('access-point') }}"
-            class="relative rounded-lg px-4 py-3 flex items-center space-x-3 transition-all duration-200 group {{ request()->routeIs('access-point') ? 'bg-gradient-to-r from-blue-600 to-blue-700 text-white shadow-lg shadow-blue-500/30' : 'text-gray-300 hover:bg-gray-800 hover:text-white' }}"
+            class="relative rounded-lg px-4 py-3 flex items-center space-x-3 transition-all duration-200 group {{ request()->routeIs('access-point') ? 'bg-gradient-to-r from-blue-600 to-blue-700 text-white shadow-lg shadow-blue-500/30' : 'text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-white' }}"
             :class="sidebarOpen ? '' : 'justify-center'">
             <svg class="w-5 h-5 flex-shrink-0 transition-transform duration-200 group-hover:scale-110" fill="none"
                 stroke="currentColor" viewBox="0 0 24 24">
@@ -78,7 +71,7 @@
 
         <!-- Connected Users -->
         <a href="{{ route('connectUser') }}"
-            class="relative rounded-lg px-4 py-3 flex items-center space-x-3 transition-all duration-200 group {{ request()->routeIs('connectUser') ? 'bg-gradient-to-r from-blue-600 to-blue-700 text-white shadow-lg shadow-blue-500/30' : 'text-gray-300 hover:bg-gray-800 hover:text-white' }}"
+            class="relative rounded-lg px-4 py-3 flex items-center space-x-3 transition-all duration-200 group {{ request()->routeIs('connectUser') ? 'bg-gradient-to-r from-blue-600 to-blue-700 text-white shadow-lg shadow-blue-500/30' : 'text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-white' }}"
             :class="sidebarOpen ? '' : 'justify-center'">
             <svg class="w-5 h-5 flex-shrink-0 transition-transform duration-200 group-hover:scale-110" fill="none"
                 stroke="currentColor" viewBox="0 0 24 24">
@@ -92,9 +85,8 @@
         </a>
 
         <!-- Alert -->
-
         <a href="{{ route('alert') }}"
-            class="text-gray-300 hover:bg-gray-800 hover:text-white rounded-lg px-4 py-3 flex items-center space-x-3 transition group {{ request()->routeIs('alert') ? 'bg-gradient-to-r from-blue-600 to-blue-700 text-white shadow-lg shadow-blue-500/30' : 'text-gray-300 hover:bg-gray-800 hover:text-white' }}"
+            class="relative rounded-lg px-4 py-3 flex items-center space-x-3 transition-all duration-200 group {{ request()->routeIs('alert') ? 'bg-gradient-to-r from-blue-600 to-blue-700 text-white shadow-lg shadow-blue-500/30' : 'text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-white' }}"
             :class="sidebarOpen ? '' : 'justify-center'">
             <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -111,12 +103,12 @@
     </div>
 
     <!-- Divider -->
-    <div class="border-t border-gray-700/50"></div>
+    <div class="border-t border-gray-200 dark:border-gray-700/50"></div>
 
     <!-- Settings Section -->
-    <div class="px-3 py-4">
+    <div class="px-3 py-4 space-y-1">
         <a href="/profile"
-            class="relative rounded-lg px-4 py-3 flex items-center space-x-3 transition-all duration-200 group text-gray-300 hover:bg-gray-800 hover:text-white"
+            class="relative rounded-lg px-4 py-3 flex items-center space-x-3 transition-all duration-200 group text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-white"
             :class="sidebarOpen ? '' : 'justify-center'">
             <svg class="w-5 h-5 flex-shrink-0 transition-transform duration-200 group-hover:rotate-90" fill="none"
                 stroke="currentColor" viewBox="0 0 24 24">
@@ -129,26 +121,49 @@
             <span x-show="!sidebarOpen"
                 class="absolute left-20 px-3 py-1.5 ml-6 text-xs font-semibold text-white bg-gray-900 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap shadow-xl border border-gray-700">Settings</span>
         </a>
+
+        <!-- Dark Mode Toggle -->
+        <button @click="toggleDark()"
+            class="relative w-full rounded-lg px-4 py-3 flex items-center space-x-3 transition-all duration-200 group text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-white"
+            :class="sidebarOpen ? '' : 'justify-center'">
+            <!-- Sun icon (shown in dark mode) -->
+            <svg x-show="darkMode" class="w-5 h-5 flex-shrink-0 text-yellow-400" fill="none" stroke="currentColor"
+                viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364-6.364l-.707.707M6.343 17.657l-.707.707M17.657 17.657l-.707-.707M6.343 6.343l-.707-.707M12 8a4 4 0 100 8 4 4 0 000-8z" />
+            </svg>
+            <!-- Moon icon (shown in light mode) -->
+            <svg x-show="!darkMode" class="w-5 h-5 flex-shrink-0 text-indigo-500" fill="none" stroke="currentColor"
+                viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+            </svg>
+            <span :class="sidebarOpen ? 'inline' : 'hidden'" class="font-medium"
+                x-text="darkMode ? 'Light Mode' : 'Dark Mode'"></span>
+            <span x-show="!sidebarOpen"
+                class="absolute left-20 px-3 py-1.5 ml-6 text-xs font-semibold text-white bg-gray-900 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap shadow-xl border border-gray-700"
+                x-text="darkMode ? 'Light Mode' : 'Dark Mode'"></span>
+        </button>
     </div>
 
     <!-- User Profile Section (Bottom) -->
-    <div class="border-t border-gray-700/50 p-4 bg-gray-800/30">
+    <div class="border-t border-gray-200 dark:border-gray-700/50 p-4 bg-gray-200/30 dark:bg-gray-800/30">
         <div class="flex items-center" :class="sidebarOpen ? 'justify-between' : 'justify-center'">
             <div :class="sidebarOpen ? 'flex items-center space-x-3' : 'hidden'"
                 class="flex items-center space-x-3 flex-1 min-w-0">
                 <div
-                    class="w-10 h-10 bg-gradient-to-br from-blue-500 via-purple-500 to-pink-500 rounded-full flex items-center justify-center flex-shrink-0 shadow-lg ring-2 ring-gray-700">
+                    class="w-10 h-10 bg-gradient-to-br from-blue-500 via-purple-500 to-pink-500 rounded-full flex items-center justify-center flex-shrink-0 shadow-lg ring-2 ring-gray-300 dark:ring-gray-700">
                     <span class="text-white font-bold text-sm">{{ substr(Auth::user()->name, 0, 1) }}</span>
                 </div>
                 <div class="flex-1 min-w-0">
-                    <p class="text-sm font-semibold text-white truncate">{{ Auth::user()->name }}</p>
-                    <p class="text-xs text-gray-400 truncate">{{ Auth::user()->email }}</p>
+                    <p class="text-sm font-semibold text-gray-900 dark:text-white truncate">{{ Auth::user()->name }}</p>
+                    <p class="text-xs text-gray-500 dark:text-gray-400 truncate">{{ Auth::user()->email }}</p>
                 </div>
             </div>
 
             <!-- Collapsed Avatar -->
             <div x-show="!sidebarOpen"
-                class="w-10 h-10 bg-gradient-to-br from-blue-500 via-purple-500 to-pink-500 rounded-full flex items-center justify-center flex-shrink-0 shadow-lg ring-2 ring-gray-700">
+                class="w-10 h-10 bg-gradient-to-br from-blue-500 via-purple-500 to-pink-500 rounded-full flex items-center justify-center flex-shrink-0 shadow-lg ring-2 ring-gray-300 dark:ring-gray-700">
                 <span class="text-white font-bold text-sm">{{ substr(Auth::user()->name, 0, 1) }}</span>
             </div>
 
@@ -156,7 +171,7 @@
             <form method="POST" action="{{ route('logout') }}" class="inline">
                 @csrf
                 <button type="submit"
-                    class="text-gray-400 hover:text-red-500 hover:bg-red-500/10 p-2 rounded-lg transition-all duration-200 flex-shrink-0"
+                    class="text-gray-500 dark:text-gray-400 hover:text-red-500 hover:bg-red-500/10 p-2 rounded-lg transition-all duration-200 flex-shrink-0"
                     :class="sidebarOpen ? 'ml-2' : ''" title="Logout">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -169,11 +184,10 @@
 </nav>
 
 <!-- Mobile Overlay -->
-<div x-show="sidebarOpen" @click="sidebarOpen = false"
-    x-transition:enter="transition-opacity ease-linear duration-300" x-transition:enter-start="opacity-0"
-    x-transition:enter-end="opacity-100" x-transition:leave="transition-opacity ease-linear duration-300"
-    x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0"
-    class="fixed inset-0 bg-black/50 z-40 lg:hidden"></div>
+<div x-show="sidebarOpen" @click="sidebarOpen = false" x-transition:enter="transition-opacity ease-linear duration-300"
+    x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100"
+    x-transition:leave="transition-opacity ease-linear duration-300" x-transition:leave-start="opacity-100"
+    x-transition:leave-end="opacity-0" class="fixed inset-0 bg-black/50 z-40 lg:hidden"></div>
 
 <style>
     .custom-scrollbar::-webkit-scrollbar {
@@ -199,8 +213,7 @@
         overflow-y: hidden;
     }
 
-    nav > div {
+    nav>div {
         overflow: hidden;
     }
-
 </style>

@@ -196,6 +196,7 @@ class ConnectedUsers extends Controller
                     'Lokasi' => $info['location'] ?? ($ap['location'] ?? '-'),
                     'SN' => $snKey1 !== '' ? $snKey1 : ($ap['sn'] ?? '-'),
                     'Model' => $ap['model'] ?? '-',
+                    'IP' => $ap['ip'] ?? '-',
                     'Kemantren' => $info['kemantren'] ?? ($ap['kemantren'] ?? '-'),
                     'Kelurahan' => $info['kelurahan'] ?? ($ap['kelurahan'] ?? '-'),
                     'RT/RW' => ($info['rt'] ?? '-') . ' / ' . ($info['rw'] ?? '-'),

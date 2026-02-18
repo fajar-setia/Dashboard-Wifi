@@ -8,9 +8,12 @@
 
     <div class="flex-1 p-6 space-y-6">
         <!-- Loading overlay -->
-        <div id="pageLoader" class="fixed inset-0 bg-slate-900/90 z-50 flex items-center justify-center">
-            <div class="text-white text-center">
-                <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-white mx-auto mb-3"></div>
+        <div id="pageLoader"
+            class="fixed inset-0 bg-white/30 dark:bg-slate-900/30 backdrop-blur-sm z-50 flex items-center justify-center">
+            <div class="text-gray-800 dark:text-white text-center">
+                <div
+                    class="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-800 dark:border-white mx-auto mb-3">
+                </div>
                 <p>Memuat Alert...</p>
             </div>
         </div>
@@ -47,14 +50,15 @@
         </div>
 
         <!-- User Alert Section -->
-        <div class="bg-gray-800 rounded-lg p-5 shadow">
+        <div class="bg-white dark:bg-gray-800 rounded-lg p-5 shadow border border-gray-200 dark:border-gray-700">
             <div class="flex items-center gap-2 mb-3">
                 <div class="w-4 h-4 rounded-full bg-red-600"></div>
-                <p class="text-white font-semibold">User Alert</p>
-                <span class="text-gray-400 text-sm">{{ $alertCount ?? 0 }}</span>
+                <p class="text-gray-900 dark:text-white font-semibold">User Alert</p>
+                <span class="text-gray-500 dark:text-gray-400 text-sm">{{ $alertCount ?? 0 }}</span>
             </div>
 
-            <div class="h-56 bg-gray-900/40 rounded-lg border border-gray-700 p-4 overflow-y-auto">
+            <div
+                class="h-56 bg-gray-50 dark:bg-gray-900/40 rounded-lg border border-gray-200 dark:border-gray-700 p-4 overflow-y-auto">
                 @if (session('api_error'))
                     <div class="text-red-400 text-sm mb-3 flex items-center gap-2">
                         <span class="w-2 h-2 rounded-full bg-red-500 animate-pulse"></span>
@@ -77,12 +81,13 @@
         </div>
 
         <!-- Actions Section -->
-        <div class="bg-gray-800 rounded-lg p-5 shadow">
-            <p class="text-white font-semibold mb-3">New Device</p>
-            <div class="h-40 bg-gray-900/40 rounded-lg border border-gray-700 px-4 py-3 overflow-y-auto">
+        <div class="bg-white dark:bg-gray-800 rounded-lg p-5 shadow border border-gray-200 dark:border-gray-700">
+            <p class="text-gray-900 dark:text-white font-semibold mb-3">New Device</p>
+            <div
+                class="h-40 bg-gray-50 dark:bg-gray-900/40 rounded-lg border border-gray-200 dark:border-gray-700 px-4 py-3 overflow-y-auto">
                 {{-- ALERT: DEVICE BARU --}}
                 @foreach ($deviceCount ?? [] as $mac)
-                    <div class="text-yellow-300 text-sm mb-2 flex items-center gap-2">
+                    <div class="text-yellow-600 dark:text-yellow-300 text-sm mb-2 flex items-center gap-2">
                         <span class="w-2 h-2 rounded-full bg-yellow-400"></span>
                         <span>Device Baru: {{ $mac }}</span>
                     </div>
@@ -91,11 +96,11 @@
         </div>
     </div>
     <script>
-    // Hide loader setelah semua chart ready
-    window.addEventListener('load', function() {
-        setTimeout(() => {
-            document.getElementById('pageLoader')?.classList.add('hidden');
-        }, 500);
-    });
+        // Hide loader setelah semua chart ready
+        window.addEventListener('load', function () {
+            setTimeout(() => {
+                document.getElementById('pageLoader')?.classList.add('hidden');
+            }, 500);
+        });
     </script>
 </x-app-layout>
