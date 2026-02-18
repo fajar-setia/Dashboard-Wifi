@@ -8,6 +8,12 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Carbon\Carbon;
+use PhpOffice\PhpSpreadsheet\Spreadsheet;
+use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
+use PhpOffice\PhpSpreadsheet\Style\Fill;
+use PhpOffice\PhpSpreadsheet\Style\Alignment;
+use PhpOffice\PhpSpreadsheet\Style\Border;
+use PhpOffice\PhpSpreadsheet\Cell\Coordinate;
 
 class DashboardController extends Controller
 {
@@ -88,12 +94,8 @@ class DashboardController extends Controller
                 $locationBuckets[$key]['total'] += count($macs);
             }
 
-            /**
-             * Masukkan ke hari INI saja (realtime)
-             */
             $todayKey = now()->toDateString();
             $weeklyLocationByDay[$todayKey] = array_values($locationBuckets);
-
 
             // Hitung unique users berdasarkan MAC address untuk menghindari duplikasi
             $uniqueMacSet = [];
@@ -126,7 +128,7 @@ class DashboardController extends Controller
         }
         $totalUser = $userOnline;
 
-        $capacityPerOnt = 2; 
+        $capacityPerOnt = 2;
         $userCapacity = ($totalAp ?? 0) * $capacityPerOnt;
 
         /* ---------- log activity (dummy) ---------- */
@@ -144,7 +146,6 @@ class DashboardController extends Controller
         }
 
         /* ---------- Google-Sheet sebagai sumber utama chart ---------- */
-        // Build ISO date labels for the current week (Mon...Sun)
         $today = now();
         $monday = $today->copy()->startOfWeek();
         $weekDates = [];
@@ -152,7 +153,6 @@ class DashboardController extends Controller
             $weekDates[] = $monday->copy()->addDays($i)->toDateString();
         }
 
-        // Ambil data mingguan langsung dari DB
         $endOfWeek = $monday->copy()->endOfWeek();
 
         $stats = DB::table('daily_user_stats')
@@ -161,7 +161,6 @@ class DashboardController extends Controller
                 $endOfWeek->toDateString()
             ])
             ->pluck('user_count', 'date');
-
 
         $weeklyData = array_fill(0, 7, 0);
         foreach ($weekDates as $i => $dateStr) {
@@ -194,12 +193,12 @@ class DashboardController extends Controller
 
         /* ---------- susun summary lokasi + preview clients (optimize memory) ---------- */
         $locationsMap = [];
-        $globalMacSet = [];  // Track unique MAC globally to prevent double counting
+        $globalMacSet = [];
 
         if (is_array($connections)) {
             foreach ($connections as $c) {
                 $sn = strtoupper(trim($c['sn'] ?? ''));
-                $info = $ontMap[$sn] ?? null;   // detail lokasi
+                $info = $ontMap[$sn] ?? null;
 
                 $clients = array_merge(
                     $c['wifiClients']['5G'] ?? [],
@@ -217,21 +216,18 @@ class DashboardController extends Controller
                         'rw' => $info['rw'] ?? '-',
                         'clients_preview' => [],
                         'count' => 0,
-                        'unique_macs' => [],  // Track unique MACs per location
+                        'unique_macs' => [],
                     ];
                 }
 
                 foreach ($clients as $cl) {
-                    // Filter berdasarkan MAC untuk menghindari duplikasi
                     $mac = strtoupper(trim($cl['wifi_terminal_mac'] ?? ''));
                     $mac = preg_replace('/[^A-F0-9:]/i', '', $mac);
 
-                    // Skip jika MAC kosong atau sudah tercatat di lokasi manapun
                     if ($mac === '' || isset($globalMacSet[$mac])) {
                         continue;
                     }
 
-                    // Tandai MAC sudah tercatat
                     $globalMacSet[$mac] = true;
                     $locationsMap[$sn]['unique_macs'][$mac] = true;
                     $locationsMap[$sn]['count']++;
@@ -247,14 +243,12 @@ class DashboardController extends Controller
             }
         }
 
-        // Convert map to collection and sort by count desc
         $locationsCollection = collect(array_values($locationsMap))->sortByDesc('count')->values();
 
         $locPerPage = request('locPerPage', 5);
         $locPage = request('locPage', 1);
         $paginated = $locationsCollection->forPage($locPage, $locPerPage)->values()->all();
 
-        // Prepare final locations for view: include limited clients (max 5) in key 'clients' for compatibility
         $locations = new LengthAwarePaginator(
             array_map(function ($row) {
                 return [
@@ -274,19 +268,16 @@ class DashboardController extends Controller
             ['path' => request()->url(), 'query' => request()->query()]
         );
 
-        // Get unique kemantren list untuk filter
         $kemantrenList = $locationsCollection->pluck('kemantren')->unique()->sort()->values();
 
-        // Get data rekap per lokasi (mingguan/bulanan)
         $today = now();
         $monday = $today->copy()->startOfWeek();
         $firstDayOfMonth = $today->copy()->startOfMonth();
         $currentMonth = $today->month;
         $currentYear = $today->year;
 
-        // Data per hari (Senin-Minggu) untuk mingguan
         $dayLabels = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu', 'Minggu'];
-        // Cache weekly per-day aggregated location stats for short period
+
         $weeklyLocationByDay = cache()->remember(sprintf('weekly_location_by_day_%s', $monday->toDateString()), 600, function () use ($monday) {
             $result = [];
             for ($i = 0; $i < 7; $i++) {
@@ -307,7 +298,6 @@ class DashboardController extends Controller
                 $result[$date->toDateString()] = $rows;
             }
 
-            // If this week's aggregation is entirely empty, fallback to historical grouped data
             $allEmpty = true;
             foreach ($result as $rows) {
                 if (!empty($rows)) {
@@ -319,7 +309,6 @@ class DashboardController extends Controller
             if ($allEmpty) {
                 Log::info('weekly_location_by_day: current week empty, falling back to historical data');
 
-                // Build fallback: group all daily_location_stats by date -> rows
                 $all = DB::table('daily_location_stats')
                     ->selectRaw('date, location, kemantren, SUM(user_count) as total')
                     ->groupBy('date', 'location', 'kemantren')
@@ -344,7 +333,6 @@ class DashboardController extends Controller
             return $result;
         });
 
-        // Ensure keys for the current week exist and are ordered Mon..Sun
         try {
             $expected = [];
             for ($i = 0; $i < 7; $i++) {
@@ -361,7 +349,6 @@ class DashboardController extends Controller
             Log::warning('failed to normalize weeklyLocationByDay keys: ' . $e->getMessage());
         }
 
-        // Log summary to help debug empty chart issues
         try {
             $nonEmptyDays = 0;
             $totalRows = 0;
@@ -386,7 +373,6 @@ class DashboardController extends Controller
             Log::warning('failed to log weekly_location_by_day summary: ' . $e->getMessage());
         }
 
-        // Aggregate untuk bulan ini (default current month)
         $monthlyLocationData = cache()->remember(sprintf('monthly_location_data_%d_%d', $currentYear, $currentMonth), 600, function () use ($firstDayOfMonth, $today, $currentYear, $currentMonth) {
             return DB::table('daily_location_stats')
                 ->whereYear('date', $currentYear)
@@ -402,43 +388,284 @@ class DashboardController extends Controller
                 ])->toArray();
         });
 
-        // Semua bulan untuk dropdown
         $months = [
-            1 => 'Januari',
-            2 => 'Februari',
-            3 => 'Maret',
-            4 => 'April',
-            5 => 'Mei',
-            6 => 'Juni',
-            7 => 'Juli',
-            8 => 'Agustus',
-            9 => 'September',
-            10 => 'Oktober',
-            11 => 'November',
-            12 => 'Desember'
+            1 => 'Januari', 2 => 'Februari', 3 => 'Maret', 4 => 'April',
+            5 => 'Mei', 6 => 'Juni', 7 => 'Juli', 8 => 'Agustus',
+            9 => 'September', 10 => 'Oktober', 11 => 'November', 12 => 'Desember'
         ];
 
         return view('dashboard', compact(
-            'totalUser',
-            'totalAp',
-            'userOnline',
-            'userCapacity',
-            'logActivity',
-            'dailyUsers',
-            'locations',
-            'kemantrenList',
-            'monthlyLocationData',
-            'dayLabels',
-            'weeklyLocationByDay',
-            'months',
-            'currentMonth',
-            'currentYear'
+            'totalUser', 'totalAp', 'userOnline', 'userCapacity',
+            'logActivity', 'dailyUsers', 'locations', 'kemantrenList',
+            'monthlyLocationData', 'dayLabels', 'weeklyLocationByDay',
+            'months', 'currentMonth', 'currentYear'
         ));
     }
-    
+
+    /* =========================================================
+     * EXPORT EXCEL
+     * ========================================================= */
+
     /**
-     * Return monthly aggregated location data as JSON for given month/year
+     * Export data ke Excel (.xlsx)
+     * Query params:
+     *   type     : weekly_user | monthly_user | weekly_location | monthly_location
+     *   month    : int  (untuk bulanan, default bulan ini)
+     *   year     : int  (untuk bulanan, default tahun ini)
+     *   kemantren: string (filter lokasi, opsional)
      */
+    public function exportExcel(Request $request)
+    {
+        $type      = $request->query('type', 'weekly_user');
+        $month     = (int) $request->query('month', now()->month);
+        $year      = (int) $request->query('year', now()->year);
+        $kemantren = $request->query('kemantren', null);
+
+        $allowed = ['weekly_user', 'monthly_user', 'weekly_location', 'monthly_location'];
+        if (!in_array($type, $allowed)) {
+            return response()->json(['error' => 'Invalid export type'], 422);
+        }
+
+        $monthNames = [
+            1=>'Januari', 2=>'Februari', 3=>'Maret', 4=>'April',
+            5=>'Mei', 6=>'Juni', 7=>'Juli', 8=>'Agustus',
+            9=>'September', 10=>'Oktober', 11=>'November', 12=>'Desember'
+        ];
+
+        // ── Style definitions ────────────────────────────────────────────────
+        $headerStyle = [
+            'font'      => ['bold' => true, 'color' => ['argb' => 'FFFFFFFF'], 'name' => 'Arial', 'size' => 11],
+            'fill'      => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['argb' => 'FF1E3A5F']],
+            'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER, 'vertical' => Alignment::VERTICAL_CENTER],
+            'borders'   => ['allBorders' => ['borderStyle' => Border::BORDER_THIN, 'color' => ['argb' => 'FF3B5998']]],
+        ];
+        $dataStyle = [
+            'borders' => ['allBorders' => ['borderStyle' => Border::BORDER_THIN, 'color' => ['argb' => 'FFDDDDDD']]],
+            'font'    => ['name' => 'Arial', 'size' => 10],
+        ];
+        $totalStyle = [
+            'font' => ['bold' => true, 'name' => 'Arial', 'size' => 10],
+            'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['argb' => 'FFE8F0FE']],
+        ];
+
+        $spreadsheet = new Spreadsheet();
+        $sheet       = $spreadsheet->getActiveSheet();
+
+        switch ($type) {
+
+            // ── WEEKLY USER ──────────────────────────────────────────────────
+            case 'weekly_user':
+                $sheet->setTitle('User Mingguan');
+                $monday   = now()->copy()->startOfWeek();
+                $dayNames = ['Minggu','Senin','Selasa','Rabu','Kamis','Jumat','Sabtu'];
+
+                $stats = DB::table('daily_user_stats')
+                    ->whereBetween('date', [$monday->toDateString(), $monday->copy()->endOfWeek()->toDateString()])
+                    ->pluck('user_count', 'date');
+
+                $sheet->fromArray(['Hari', 'Tanggal', 'Jumlah User'], null, 'A1');
+                $sheet->getStyle('A1:C1')->applyFromArray($headerStyle);
+                $sheet->getRowDimension(1)->setRowHeight(22);
+
+                for ($i = 0; $i < 7; $i++) {
+                    $date  = $monday->copy()->addDays($i);
+                    $count = (int)($stats[$date->toDateString()] ?? 0);
+                    $row   = $i + 2;
+                    $sheet->fromArray([$dayNames[$date->dayOfWeek], $date->toDateString(), $count], null, "A{$row}");
+                    $sheet->getStyle("A{$row}:C{$row}")->applyFromArray($dataStyle);
+                    $sheet->getStyle("C{$row}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+                }
+
+                $totalRow = 9;
+                $sheet->setCellValue("A{$totalRow}", 'TOTAL');
+                $sheet->setCellValue("B{$totalRow}", '');
+                $sheet->setCellValue("C{$totalRow}", '=SUM(C2:C8)');
+                $sheet->getStyle("A{$totalRow}:C{$totalRow}")->applyFromArray($totalStyle);
+                $sheet->mergeCells("A{$totalRow}:B{$totalRow}");
+
+                $sheet->getColumnDimension('A')->setWidth(12);
+                $sheet->getColumnDimension('B')->setWidth(14);
+                $sheet->getColumnDimension('C')->setWidth(14);
+
+                $fileName = 'rekap-user-mingguan-' . $monday->toDateString() . '.xlsx';
+                break;
+
+            // ── MONTHLY USER ─────────────────────────────────────────────────
+            case 'monthly_user':
+                $sheet->setTitle('User Bulanan');
+                $start = Carbon::createFromDate($year, $month, 1)->toDateString();
+                $end   = Carbon::createFromDate($year, $month, 1)->endOfMonth()->toDateString();
+                if ($end > now()->toDateString()) $end = now()->toDateString();
+
+                $stats = DB::table('daily_user_stats')
+                    ->whereBetween('date', [$start, $end])
+                    ->orderBy('date')
+                    ->get();
+
+                $sheet->fromArray(['Tanggal', 'Jumlah User'], null, 'A1');
+                $sheet->getStyle('A1:B1')->applyFromArray($headerStyle);
+                $sheet->getRowDimension(1)->setRowHeight(22);
+
+                foreach ($stats as $i => $s) {
+                    $row = $i + 2;
+                    $sheet->fromArray([$s->date, (int)$s->user_count], null, "A{$row}");
+                    $sheet->getStyle("A{$row}:B{$row}")->applyFromArray($dataStyle);
+                    $sheet->getStyle("B{$row}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+                }
+
+                $lastDataRow = count($stats) + 1;
+                $totalRow    = $lastDataRow + 1;
+                $sheet->setCellValue("A{$totalRow}", 'TOTAL');
+                $sheet->setCellValue("B{$totalRow}", "=SUM(B2:B{$lastDataRow})");
+                $sheet->getStyle("A{$totalRow}:B{$totalRow}")->applyFromArray($totalStyle);
+
+                $sheet->getColumnDimension('A')->setWidth(14);
+                $sheet->getColumnDimension('B')->setWidth(14);
+
+                $fileName = 'rekap-user-' . ($monthNames[$month] ?? $month) . '-' . $year . '.xlsx';
+                break;
+
+            // ── WEEKLY LOCATION ──────────────────────────────────────────────
+            case 'weekly_location':
+                $sheet->setTitle('Lokasi Mingguan');
+                $monday    = now()->copy()->startOfWeek();
+                $weekDates = [];
+                for ($i = 0; $i < 7; $i++) {
+                    $weekDates[] = $monday->copy()->addDays($i)->toDateString();
+                }
+                $dayLabels = ['Senin','Selasa','Rabu','Kamis','Jumat','Sabtu','Minggu'];
+
+                $headers = array_merge(['Lokasi', 'Kemantren'], $dayLabels, ['Total']);
+                $sheet->fromArray($headers, null, 'A1');
+                $lastCol = Coordinate::stringFromColumnIndex(count($headers));
+                $sheet->getStyle("A1:{$lastCol}1")->applyFromArray($headerStyle);
+                $sheet->getRowDimension(1)->setRowHeight(22);
+
+                $raw = DB::table('daily_location_stats')
+                    ->whereBetween('date', [$weekDates[0], $weekDates[6]])
+                    ->selectRaw('location, kemantren, date, SUM(user_count) as total')
+                    ->groupBy('location', 'kemantren', 'date')
+                    ->get();
+
+                $pivot = [];
+                foreach ($raw as $r) {
+                    $key = $r->location . '|||' . $r->kemantren;
+                    if (!isset($pivot[$key])) {
+                        $pivot[$key] = ['location' => $r->location, 'kemantren' => $r->kemantren];
+                        foreach ($weekDates as $d) $pivot[$key][$d] = 0;
+                    }
+                    $pivot[$key][$r->date] = (int)$r->total;
+                }
+
+                usort($pivot, function ($a, $b) use ($weekDates) {
+                    $sumA = array_sum(array_map(fn($d) => $a[$d] ?? 0, $weekDates));
+                    $sumB = array_sum(array_map(fn($d) => $b[$d] ?? 0, $weekDates));
+                    return $sumB <=> $sumA;
+                });
+
+                foreach ($pivot as $i => $row) {
+                    $r    = $i + 2;
+                    $vals = [$row['location'], $row['kemantren']];
+                    foreach ($weekDates as $d) $vals[] = $row[$d] ?? 0;
+                    $vals[] = array_sum(array_slice($vals, 2));
+                    $sheet->fromArray($vals, null, "A{$r}");
+                    $sheet->getStyle("A{$r}:{$lastCol}{$r}")->applyFromArray($dataStyle);
+                    $sheet->getStyle("{$lastCol}{$r}")->getFont()->setBold(true);
+                }
+
+                $sheet->getColumnDimension('A')->setWidth(35);
+                $sheet->getColumnDimension('B')->setWidth(18);
+                for ($c = 3; $c <= count($headers); $c++) {
+                    $col = Coordinate::stringFromColumnIndex($c);
+                    $sheet->getColumnDimension($col)->setWidth(10);
+                }
+
+                $fileName = 'rekap-lokasi-mingguan-' . now()->startOfWeek()->toDateString() . '.xlsx';
+                break;
+
+            // ── MONTHLY LOCATION ─────────────────────────────────────────────
+            case 'monthly_location':
+            default:
+                $sheet->setTitle('Lokasi Bulanan');
+                $start = Carbon::createFromDate($year, $month, 1)->toDateString();
+                $end   = Carbon::createFromDate($year, $month, 1)->endOfMonth()->toDateString();
+                if ($end > now()->toDateString()) $end = now()->toDateString();
+
+                $query = DB::table('daily_location_stats')
+                    ->whereYear('date', $year)
+                    ->whereMonth('date', $month)
+                    ->whereBetween('date', [$start, $end])
+                    ->groupBy('location', 'kemantren')
+                    ->selectRaw('location, kemantren, SUM(user_count) as total')
+                    ->orderByDesc('total');
+
+                if ($kemantren && $kemantren !== 'all') {
+                    $query->where('kemantren', $kemantren);
+                }
+
+                $data = $query->get();
+
+                $sheet->fromArray(['No', 'Lokasi', 'Kemantren', 'Total User'], null, 'A1');
+                $sheet->getStyle('A1:D1')->applyFromArray($headerStyle);
+                $sheet->getRowDimension(1)->setRowHeight(22);
+
+                foreach ($data as $i => $r) {
+                    $row = $i + 2;
+                    $sheet->fromArray([$i + 1, $r->location, $r->kemantren, (int)$r->total], null, "A{$row}");
+                    $sheet->getStyle("A{$row}:D{$row}")->applyFromArray($dataStyle);
+                    $sheet->getStyle("A{$row}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+                    $sheet->getStyle("D{$row}")->getFont()->setBold(true);
+                }
+
+                $lastDataRow = count($data) + 1;
+                $totalRow    = $lastDataRow + 1;
+                $sheet->setCellValue("A{$totalRow}", '');
+                $sheet->setCellValue("B{$totalRow}", 'TOTAL');
+                $sheet->setCellValue("C{$totalRow}", '');
+                $sheet->setCellValue("D{$totalRow}", "=SUM(D2:D{$lastDataRow})");
+                $sheet->getStyle("A{$totalRow}:D{$totalRow}")->applyFromArray($totalStyle);
+
+                $sheet->getColumnDimension('A')->setWidth(6);
+                $sheet->getColumnDimension('B')->setWidth(35);
+                $sheet->getColumnDimension('C')->setWidth(18);
+                $sheet->getColumnDimension('D')->setWidth(14);
+
+                $fileName = 'rekap-lokasi-' . ($monthNames[$month] ?? $month) . '-' . $year . '.xlsx';
+                break;
+        }
+
+        // ── Info sheet (metadata) ────────────────────────────────────────────
+        $infoSheet = $spreadsheet->createSheet();
+        $infoSheet->setTitle('Info');
+        $infoSheet->setCellValue('A1', 'Diekspor pada');
+        $infoSheet->setCellValue('B1', now('Asia/Jakarta')->format('d/m/Y H:i:s') . ' WIB');
+        $infoSheet->setCellValue('A2', 'Tipe');
+        $infoSheet->setCellValue('B2', $type);
+        $infoSheet->setCellValue('A3', 'Periode');
+        $infoSheet->setCellValue('B3', str_contains($type, 'monthly')
+            ? ($monthNames[$month] ?? $month) . ' ' . $year
+            : 'Minggu ' . now()->startOfWeek()->toDateString());
+        $infoSheet->getColumnDimension('A')->setWidth(18);
+        $infoSheet->getColumnDimension('B')->setWidth(30);
+
+        $spreadsheet->setActiveSheetIndex(0);
+
+        // ── Stream ke browser ────────────────────────────────────────────────
+        $writer = new Xlsx($spreadsheet);
+
+        return response()->streamDownload(function () use ($writer) {
+            $writer->save('php://output');
+        }, $fileName, [
+            'Content-Type'        => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            'Content-Disposition' => 'attachment; filename="' . $fileName . '"',
+            'Cache-Control'       => 'max-age=0',
+        ]);
+    }
+
+    /* =========================================================
+     * EXISTING METHODS (tidak ada perubahan)
+     * ========================================================= */
+
     public function monthlyLocationData(Request $request)
     {
         $month = (int) $request->query('month', now()->month);
@@ -469,7 +696,6 @@ class DashboardController extends Controller
                 $query->where('kemantren', $kemantren);
             }
 
-            // allow simple search on location
             if ($search) {
                 $query->havingRaw("LOWER(location) LIKE ?", ['%' . strtolower($search) . '%']);
             }
@@ -487,9 +713,6 @@ class DashboardController extends Controller
         return response()->json($data);
     }
 
-    /**
-     * Return full clients list for a given AP SN (used by AJAX on-demand)
-     */
     public function locationClients(Request $request)
     {
         $sn = strtoupper(trim($request->query('sn', '')));
@@ -497,13 +720,11 @@ class DashboardController extends Controller
             return response()->json(['error' => 'sn required'], 400);
         }
 
-        // Use OnuApiService
         $onuService = app(\App\Services\OnuApiService::class);
         $connections = $onuService->getAllOnuWithClients();
 
         $ontMap = cache()->remember('ont_map_paket_all', 600, fn() => $this->readOntMap());
 
-        // Find connection by SN and build clients
         $found = null;
         foreach ($connections as $c) {
             if (strtoupper(trim($c['sn'] ?? '')) === $sn) {
@@ -539,104 +760,80 @@ class DashboardController extends Controller
     }
 
     public function updateRealtimeLocationStats()
-{
-    try {
-        $onuService = app(\App\Services\OnuApiService::class);
-        $connections = $onuService->getAllOnuWithClients();
-        
-        $ontMap = cache()->remember(
-            'ont_map_paket_all',
-            86400,
-            fn() => $this->readOntMap()
-        );
-
-        $stats = $this->buildRealtimeStats($connections, $ontMap);
-        
-        // Simpan ke database untuk hari ini
-        $today = now()->toDateString();
-        
-        DB::beginTransaction();
+    {
         try {
-            foreach ($stats as $stat) {
-                DB::table('daily_location_stats')->updateOrInsert(
-                    [
-                        'date' => $today,
-                        'location' => $stat['location'],
-                        'kemantren' => $stat['kemantren'],
-                        'sn' => $stat['sn'] ?? null,
-                    ],
-                    [
-                        'user_count' => $stat['user_count'],
-                        'updated_at' => now(),
-                    ]
-                );
+            $onuService = app(\App\Services\OnuApiService::class);
+            $connections = $onuService->getAllOnuWithClients();
+
+            $ontMap = cache()->remember('ont_map_paket_all', 86400, fn() => $this->readOntMap());
+
+            $stats = $this->buildRealtimeStats($connections, $ontMap);
+
+            $today = now()->toDateString();
+
+            DB::beginTransaction();
+            try {
+                foreach ($stats as $stat) {
+                    DB::table('daily_location_stats')->updateOrInsert(
+                        ['date' => $today, 'location' => $stat['location'], 'kemantren' => $stat['kemantren'], 'sn' => $stat['sn'] ?? null],
+                        ['user_count' => $stat['user_count'], 'updated_at' => now()]
+                    );
+                }
+                DB::commit();
+
+                Log::info('Realtime location stats updated', [
+                    'date' => $today,
+                    'locations_count' => count($stats),
+                    'total_users' => array_sum(array_column($stats, 'user_count'))
+                ]);
+            } catch (\Throwable $e) {
+                DB::rollBack();
+                throw $e;
             }
-            DB::commit();
-            
-            Log::info('Realtime location stats updated', [
-                'date' => $today,
-                'locations_count' => count($stats),
+
+            return response()->json([
+                'success' => true,
+                'data' => $stats,
+                'timestamp' => now()->toIso8601String(),
+                'total_locations' => count($stats),
                 'total_users' => array_sum(array_column($stats, 'user_count'))
             ]);
-            
         } catch (\Throwable $e) {
-            DB::rollBack();
-            throw $e;
+            Log::error('updateRealtimeLocationStats error: ' . $e->getMessage());
+            return response()->json(['success' => false, 'error' => $e->getMessage()], 500);
         }
-
-        return response()->json([
-            'success' => true,
-            'data' => $stats,
-            'timestamp' => now()->toIso8601String(),
-            'total_locations' => count($stats),
-            'total_users' => array_sum(array_column($stats, 'user_count'))
-        ]);
-        
-    } catch (\Throwable $e) {
-        Log::error('updateRealtimeLocationStats error: ' . $e->getMessage());
-        return response()->json([
-            'success' => false,
-            'error' => $e->getMessage()
-        ], 500);
     }
-}
 
     public function getWeeklyLocationData(Request $request)
     {
         try {
-            $today = now();
+            $today  = now();
             $monday = $today->copy()->startOfWeek();
-            
+
             $kemantren = $request->query('kemantren', null);
-            $search = $request->query('search', null);
-            $top = (int) $request->query('top', 8); // Default top 8 locations
-            
+            $search    = $request->query('search', null);
+            $top       = (int) $request->query('top', 8);
+
             $weekDates = [];
             for ($i = 0; $i < 7; $i++) {
                 $weekDates[] = $monday->copy()->addDays($i)->toDateString();
             }
-            
-            // Query untuk mendapatkan total per location across the week
+
             $query = DB::table('daily_location_stats')
                 ->whereBetween('date', [$weekDates[0], $weekDates[6]])
                 ->selectRaw('location, kemantren, SUM(user_count) as total_week')
                 ->groupBy('location', 'kemantren');
-            
+
             if ($kemantren && $kemantren !== 'all') {
                 $query->where('kemantren', $kemantren);
             }
-            
+
             if ($search) {
                 $query->havingRaw("LOWER(location) LIKE ?", ['%' . strtolower($search) . '%']);
             }
-            
-            // Get top locations
-            $topLocations = $query->orderByDesc('total_week')
-                ->limit($top)
-                ->get()
-                ->pluck('location')
-                ->toArray();
-            
+
+            $topLocations = $query->orderByDesc('total_week')->limit($top)->get()->pluck('location')->toArray();
+
             if (empty($topLocations)) {
                 return response()->json([
                     'labels' => ['Senin','Selasa','Rabu','Kamis','Jumat','Sabtu','Minggu'],
@@ -645,32 +842,26 @@ class DashboardController extends Controller
                     'isEmpty' => true
                 ]);
             }
-            
-            // Get daily data for top locations
+
             $result = [];
-            
             foreach ($weekDates as $date) {
-                $query = DB::table('daily_location_stats')
+                $q = DB::table('daily_location_stats')
                     ->where('date', $date)
                     ->whereIn('location', $topLocations)
                     ->selectRaw('location, kemantren, SUM(user_count) as total')
                     ->groupBy('location', 'kemantren');
-                
+
                 if ($kemantren && $kemantren !== 'all') {
-                    $query->where('kemantren', $kemantren);
+                    $q->where('kemantren', $kemantren);
                 }
-                
-                $dayData = $query->get()
-                    ->map(fn($r) => [
-                        'location' => $r->location,
-                        'kemantren' => $r->kemantren,
-                        'total' => (int) $r->total,
-                    ])
-                    ->toArray();
-                
-                $result[$date] = $dayData;
+
+                $result[$date] = $q->get()->map(fn($r) => [
+                    'location' => $r->location,
+                    'kemantren' => $r->kemantren,
+                    'total' => (int) $r->total,
+                ])->toArray();
             }
-            
+
             return response()->json([
                 'labels' => ['Senin','Selasa','Rabu','Kamis','Jumat','Sabtu','Minggu'],
                 'dates' => $weekDates,
@@ -678,7 +869,6 @@ class DashboardController extends Controller
                 'topLocations' => $topLocations,
                 'isEmpty' => false
             ]);
-            
         } catch (\Throwable $e) {
             Log::error('getWeeklyLocationData error: ' . $e->getMessage());
             return response()->json(['error' => 'Unable to fetch data'], 500);
@@ -687,21 +877,17 @@ class DashboardController extends Controller
 
     private function buildRealtimeStats(array $connections, array $ontMap): array
     {
-        $globalMac = [];
         $result = [];
-        
+
         foreach ($connections as $c) {
             $sn = strtoupper(trim($c['sn'] ?? ''));
             if (!$sn || !isset($ontMap[$sn])) continue;
-            
+
             $info = $ontMap[$sn];
             if (empty($info['location'])) continue;
-            
-            // Use SN as unique key to track per AP
-            $key = $sn;
-            
-            if (!isset($result[$key])) {
-                $result[$key] = [
+
+            if (!isset($result[$sn])) {
+                $result[$sn] = [
                     'sn' => $sn,
                     'location' => $info['location'],
                     'kemantren' => $info['kemantren'],
@@ -709,37 +895,31 @@ class DashboardController extends Controller
                     'macs' => []
                 ];
             }
-            
+
             $clients = array_merge(
                 $c['wifiClients']['5G'] ?? [],
                 $c['wifiClients']['2_4G'] ?? [],
                 $c['wifiClients']['unknown'] ?? []
             );
-            
+
             foreach ($clients as $cl) {
                 $mac = strtoupper(trim($cl['wifi_terminal_mac'] ?? ''));
                 $mac = preg_replace('/[^A-F0-9:]/', '', $mac);
-                
                 if (!$mac) continue;
-                
-                // Track unique MAC per location (not globally)
-                if (!isset($result[$key]['macs'][$mac])) {
-                    $result[$key]['macs'][$mac] = true;
-                    $result[$key]['user_count']++;
+
+                if (!isset($result[$sn]['macs'][$mac])) {
+                    $result[$sn]['macs'][$mac] = true;
+                    $result[$sn]['user_count']++;
                 }
             }
         }
-        
-        // Remove macs array before returning (just for counting)
-        return array_map(function($item) {
+
+        return array_map(function ($item) {
             unset($item['macs']);
             return $item;
         }, array_values($result));
     }
 
-
-
-    /* ---------- Mapping SN -> lokasi (pakai CSV lokal ACSfiks.csv) ---------- */
     private function readOntMap(): array
     {
         $path = public_path('storage/ACSfiks.csv');
@@ -774,46 +954,36 @@ class DashboardController extends Controller
 
         while (($row = fgetcsv($handle)) !== false) {
             $sn = strtoupper($get($row, 'sn'));
-            if ($sn === '') {
-                continue;
-            }
+            if ($sn === '') continue;
 
             $map[$sn] = [
-                'location' => $get($row, 'nama_lokasi'),
-                'kemantren' => $get($row, 'kemantren'),
-                'kelurahan' => $get($row, 'kelurahan'),
-                'rt' => $get($row, 'rt'),
-                'rw' => $get($row, 'rw'),
-                'ip' => $get($row, 'ip'),
-                'pic' => $get($row, 'pic'),
+                'location'   => $get($row, 'nama_lokasi'),
+                'kemantren'  => $get($row, 'kemantren'),
+                'kelurahan'  => $get($row, 'kelurahan'),
+                'rt'         => $get($row, 'rt'),
+                'rw'         => $get($row, 'rw'),
+                'ip'         => $get($row, 'ip'),
+                'pic'        => $get($row, 'pic'),
                 'coordinate' => $get($row, 'titik_koordinat'),
             ];
         }
 
         fclose($handle);
-
         return $map;
     }
 
-    /**
-     * Return monthly user stats data as JSON for given month/year
-     */
     public function monthlyUserData(Request $request)
     {
         $month = (int) $request->query('month', now()->month);
-        $year = (int) $request->query('year', now()->year);
+        $year  = (int) $request->query('year', now()->year);
 
         $start = Carbon::createFromDate($year, $month, 1)->toDateString();
-        $end = Carbon::createFromDate($year, $month, 1)->endOfMonth()->toDateString();
+        $end   = Carbon::createFromDate($year, $month, 1)->endOfMonth()->toDateString();
 
         $today = now()->toDateString();
-        if ($end > $today) {
-            $end = $today;
-        }
+        if ($end > $today) $end = $today;
 
-        $cacheKey = sprintf('monthly_user_data_%d_%d', $year, $month);
-
-        $data = cache()->remember($cacheKey, 300, function () use ($start, $end) {
+        $data = cache()->remember(sprintf('monthly_user_data_%d_%d', $year, $month), 300, function () use ($start, $end) {
             $stats = DB::table('daily_user_stats')
                 ->whereBetween('date', [$start, $end])
                 ->orderBy('date')
@@ -821,16 +991,12 @@ class DashboardController extends Controller
 
             $labels = [];
             $values = [];
-
             foreach ($stats as $stat) {
                 $labels[] = $stat->date;
                 $values[] = (int) $stat->user_count;
             }
 
-            return [
-                'labels' => $labels,
-                'data' => $values,
-            ];
+            return ['labels' => $labels, 'data' => $values];
         });
 
         return response()->json($data);
@@ -839,36 +1005,27 @@ class DashboardController extends Controller
     public function getUserOnline()
     {
         try {
-            $onuService = app(\App\Services\OnuApiService::class);
+            $onuService  = app(\App\Services\OnuApiService::class);
             $connections = $onuService->getAllOnuWithClients();
 
             $uniqueMacSet = [];
             if (is_array($connections)) {
                 foreach ($connections as $c) {
-                    if (!is_array($c) || !isset($c['wifiClients'])) {
-                        continue;
-                    }
-                    $wifi = $c['wifiClients'];
-                    $allClients = array_merge(
-                        $wifi['5G'] ?? [],
-                        $wifi['2_4G'] ?? [],
-                        $wifi['unknown'] ?? []
-                    );
+                    if (!is_array($c) || !isset($c['wifiClients'])) continue;
+                    $wifi       = $c['wifiClients'];
+                    $allClients = array_merge($wifi['5G'] ?? [], $wifi['2_4G'] ?? [], $wifi['unknown'] ?? []);
 
                     foreach ($allClients as $client) {
-                        if (!isset($client['wifi_terminal_mac']))
-                            continue;
+                        if (!isset($client['wifi_terminal_mac'])) continue;
                         $mac = strtoupper(trim($client['wifi_terminal_mac']));
                         $mac = preg_replace('/[^A-F0-9:]/i', '', $mac);
-                        if ($mac === '')
-                            continue;
+                        if ($mac === '') continue;
                         $uniqueMacSet[$mac] = true;
                     }
                 }
             }
             $userOnline = count($uniqueMacSet);
 
-            // Update daily_user_stats secara real-time
             $date = now()->toDateString();
             DB::table('daily_user_stats')->updateOrInsert(
                 ['date' => $date],
@@ -879,20 +1036,12 @@ class DashboardController extends Controller
         } catch (\Throwable $e) {
             Log::error('DashboardController@getUserOnline : ' . $e->getMessage());
 
-            // Fallback: return data dari database jika API error
             try {
-                $date = now()->toDateString();
-                $lastStats = DB::table('daily_user_stats')
-                    ->where('date', $date)
-                    ->first();
-
+                $date      = now()->toDateString();
+                $lastStats = DB::table('daily_user_stats')->where('date', $date)->first();
                 $userOnline = $lastStats ? $lastStats->user_count : 0;
 
-                return response()->json([
-                    'userOnline' => $userOnline,
-                    'cached' => true,
-                    'error' => 'Using cached data due to API timeout'
-                ]);
+                return response()->json(['userOnline' => $userOnline, 'cached' => true, 'error' => 'Using cached data due to API timeout']);
             } catch (\Throwable $dbError) {
                 Log::error('Database fallback error: ' . $dbError->getMessage());
                 return response()->json(['error' => 'Unable to fetch user data'], 500);
@@ -903,44 +1052,33 @@ class DashboardController extends Controller
     public function getWeeklyUserData()
     {
         try {
-            // Build ISO date labels for the current week (Mon...Sun)
-            $today = now();
-            $monday = $today->copy()->startOfWeek();
+            $today     = now();
+            $monday    = $today->copy()->startOfWeek();
             $weekDates = [];
             for ($i = 0; $i < 7; $i++) {
                 $weekDates[] = $monday->copy()->addDays($i)->toDateString();
             }
 
-            // Ambil data mingguan langsung dari DB
-            $endOfWeek = $monday->copy()->endOfWeek();
-
             $stats = DB::table('daily_user_stats')
-                ->whereBetween('date', [
-                    $monday->toDateString(),
-                    $endOfWeek->toDateString()
-                ])
+                ->whereBetween('date', [$monday->toDateString(), $monday->copy()->endOfWeek()->toDateString()])
                 ->pluck('user_count', 'date');
 
             $weeklyData = array_fill(0, 7, 0);
             foreach ($weekDates as $i => $dateStr) {
-                $weeklyData[$i] = (int) ($stats[$dateStr] ?? 0);
+                $weeklyData[$i] = (int)($stats[$dateStr] ?? 0);
             }
 
-            $dayNames = ['Minggu','Senin','Selasa','Rabu','Kamis','Jumat','Sabtu'];
+            $dayNames    = ['Minggu','Senin','Selasa','Rabu','Kamis','Jumat','Sabtu'];
             $dailyLabels = [];
             foreach ($weekDates as $d) {
                 try {
-                    $dt = Carbon::parse($d);
-                    $dailyLabels[] = $dayNames[$dt->dayOfWeek] ?? $d;
+                    $dailyLabels[] = $dayNames[Carbon::parse($d)->dayOfWeek] ?? $d;
                 } catch (\Throwable $e) {
                     $dailyLabels[] = $d;
                 }
             }
 
-            return response()->json([
-                'labels' => $dailyLabels,
-                'data' => $weeklyData
-            ]);
+            return response()->json(['labels' => $dailyLabels, 'data' => $weeklyData]);
         } catch (\Throwable $e) {
             Log::error('DashboardController@getWeeklyUserData : ' . $e->getMessage());
             return response()->json(['error' => 'Unable to fetch weekly data'], 500);
@@ -950,21 +1088,16 @@ class DashboardController extends Controller
     public function getDailyUserDataByHour(Request $request)
     {
         try {
-            $dateParam = $request->query('date');
-
-            // Use Asia/Jakarta timezone for all date handling
+            $dateParam  = $request->query('date');
             $nowJakarta = Carbon::now('Asia/Jakarta');
 
-            // Use provided date or default to today (parse in Jakarta timezone)
             if (!$dateParam) {
                 $dateObj = $nowJakarta->copy()->startOfDay();
             } else {
                 try {
-                    // Expect YYYY-MM-DD; parse explicitly in Asia/Jakarta
                     $dateObj = Carbon::createFromFormat('Y-m-d', $dateParam, 'Asia/Jakarta')->startOfDay();
                 } catch (\Throwable $e) {
                     try {
-                        // Fallback: generic parse but force Jakarta timezone
                         $dateObj = Carbon::parse($dateParam, 'Asia/Jakarta')->startOfDay();
                     } catch (\Throwable $ex) {
                         Log::warning('Invalid date format provided: ' . $dateParam);
@@ -973,28 +1106,22 @@ class DashboardController extends Controller
                 }
             }
 
-            // Don't allow future dates (compare in Jakarta timezone)
             if ($dateObj->isAfter($nowJakarta)) {
                 $dateObj = $nowJakarta->copy()->startOfDay();
             }
 
             $date = $dateObj->toDateString();
 
-            // Get hour labels (0-23)
             $hourLabels = [];
             for ($i = 0; $i < 24; $i++) {
                 $hourLabels[] = str_pad($i, 2, '0', STR_PAD_LEFT) . ':00';
             }
 
-            // Initialize data with zeros for all 24 hours
-            $hourlyData = array_fill(0, 24, 0);
-            
-            // Determine if this is today's date (use Asia/Jakarta timezone)
-            $now = Carbon::now('Asia/Jakarta');
-            $isToday = $date === $now->toDateString();
+            $hourlyData  = array_fill(0, 24, 0);
+            $now         = Carbon::now('Asia/Jakarta');
+            $isToday     = $date === $now->toDateString();
             $currentHour = $isToday ? (int)$now->format('H') : 23;
 
-            // Fetch data from database for the selected date
             try {
                 $stats = DB::table('daily_user_stats_hourly')
                     ->where('date', $date)
@@ -1004,15 +1131,9 @@ class DashboardController extends Controller
                 if ($stats->count() > 0) {
                     foreach ($stats as $stat) {
                         $hourIndex = (int)$stat->hour;
-                        // Only include data up to current hour if today
-                        if ($isToday && $hourIndex > $currentHour) {
-                            $hourlyData[$hourIndex] = 0;
-                        } else {
-                            $hourlyData[$hourIndex] = (int)$stat->user_count;
-                        }
+                        $hourlyData[$hourIndex] = ($isToday && $hourIndex > $currentHour) ? 0 : (int)$stat->user_count;
                     }
-                    
-                    // Zero out future hours for today
+
                     if ($isToday) {
                         for ($i = $currentHour + 1; $i < 24; $i++) {
                             $hourlyData[$i] = 0;
@@ -1024,16 +1145,6 @@ class DashboardController extends Controller
             } catch (\Throwable $e) {
                 Log::warning('Error fetching daily_user_stats_hourly: ' . $e->getMessage());
             }
-
-            Log::info('getDailyUserDataByHour response', [
-                'requestedDate' => $dateParam,
-                'processedDate' => $date,
-                'isToday' => $isToday,
-                'currentHour' => $currentHour,
-                'dataCount' => count(array_filter($hourlyData)),
-                'dataSum' => array_sum($hourlyData),
-                'timezone' => 'Asia/Jakarta',
-            ]);
 
             return response()->json([
                 'labels' => $hourLabels,

@@ -31,6 +31,9 @@ Route::middleware(['auth'])->prefix('dashboard')->group(function () {
     // Main dashboard
     Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
 
+    //Export dashboard data
+    Route::get('/dashboard/export', [DashboardController::class, 'exportExcel'])->name('dashboard.export');
+
     // Location Stats API
     Route::get('/weekly-location-data', [DashboardController::class, 'getWeeklyLocationData'])
         ->name('dashboard.weekly-location-data');

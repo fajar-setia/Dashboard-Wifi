@@ -53,6 +53,33 @@
                             <option value="daily">Harian</option>
                             <option value="monthly">Bulanan</option>
                         </select>
+        
+        <!-- REKAP TOTAL USER - Tombol Export -->
+        <div class="flex items-center gap-2">
+            {{-- TAMBAHAN: Dropdown Export --}}
+            <div class="relative" x-data="{ open: false }">
+                <button @click="open = !open"
+                        class="px-3 py-1.5 rounded text-sm font-medium bg-green-700 hover:bg-green-600 text-white flex items-center gap-1">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5 5 5-5M12 15V3"/>
+                    </svg>
+                    Export
+                </button>
+                <div x-show="open" @click.outside="open = false"
+                    class="absolute right-0 mt-1 w-52 rounded shadow-lg bg-gray-800 border border-gray-600 z-50">
+                    <a href="{{ route('dashboard.export', ['type' => 'weekly_user']) }}"
+                    class="block px-4 py-2 text-sm text-gray-200 hover:bg-gray-700">
+                        📊 User Mingguan (.xlsx)
+                    </a>
+                    <a id="export-monthly-user-link"
+                    href="{{ route('dashboard.export', ['type' => 'monthly_user', 'month' => now()->month, 'year' => now()->year]) }}"
+                    class="block px-4 py-2 text-sm text-gray-200 hover:bg-gray-700">
+                        📅 User Bulanan (.xlsx)
+                    </a>
+                </div>
+            </div>
+        </div>
 
                         <!-- Tanggal untuk Harian -->
                         <input type="date" id="dailyDateFilter"
@@ -173,6 +200,29 @@
                                 <option value="10">Top 10</option>
                                 <option value="15">Top 15</option>
                             </select>
+                <!-- REKAP PER LOKASI - Tombol Export -->
+                <div class="relative" x-data="{ open: false }">
+                    <button @click="open = !open"
+                            class="px-3 py-1.5 rounded text-sm font-medium bg-green-700 hover:bg-green-600 text-white flex items-center gap-1">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5 5 5-5M12 15V3"/>
+                        </svg>
+                        Export
+                    </button>
+                    <div x-show="open" @click.outside="open = false"
+                        class="absolute right-0 mt-1 w-56 rounded shadow-lg bg-gray-800 border border-gray-600 z-50">
+                        <a href="{{ route('dashboard.export', ['type' => 'weekly_location']) }}"
+                        class="block px-4 py-2 text-sm text-gray-200 hover:bg-gray-700">
+                            📊 Lokasi Mingguan (.xlsx)
+                        </a>
+                        <a id="export-monthly-location-link"
+                        href="{{ route('dashboard.export', ['type' => 'monthly_location', 'month' => now()->month, 'year' => now()->year]) }}"
+                        class="block px-4 py-2 text-sm text-gray-200 hover:bg-gray-700">
+                            📅 Lokasi Bulanan (.xlsx)
+                        </a>
+                    </div>
+                </div>
                         </div>
                     </div>
 
@@ -874,6 +924,33 @@
             updateUserOnline();
             updateWeeklyChart();
         }, 30000);
+    });
+    </script>
+
+    <script>
+        // Sinkronisasi export link dengan selector bulan/tahun yang sudah ada
+    function syncExportLinks() {
+        const month = document.getElementById('monthSelect')?.value ?? {{ now()->month }};
+        const year  = document.getElementById('yearSelect')?.value  ?? {{ now()->year }};
+        const kemantren = document.getElementById('kemantrenFilter')?.value ?? '';
+
+        const userLink = document.getElementById('export-monthly-user-link');
+        if (userLink) {
+            userLink.href = `/dashboard/export?type=monthly_user&month=${month}&year=${year}`;
+        }
+
+        const locLink = document.getElementById('export-monthly-location-link');
+        if (locLink) {
+            locLink.href = `/dashboard/export?type=monthly_location&month=${month}&year=${year}&kemantren=${kemantren}`;
+        }
+    }
+
+    // Panggil saat DOM siap dan setiap kali dropdown berubah
+    document.addEventListener('DOMContentLoaded', function () {
+        syncExportLinks();
+        document.getElementById('monthSelect')?.addEventListener('change', syncExportLinks);
+        document.getElementById('yearSelect')?.addEventListener('change', syncExportLinks);
+        document.getElementById('kemantrenFilter')?.addEventListener('change', syncExportLinks);
     });
     </script>
 </x-app-layout>
