@@ -27,7 +27,7 @@ No,Nama Lokasi,Kemantren,Kelurahan,RT,RW,ID Lifemedia,IP,SN,Titik Koordinat,PIC,
 26,Balai RW 11,Wirobrajan,Pakuncen,49,11,XM000339,10.239.0.45,ZTEGC8A69580,-7.799582 110.354356,"Bob Rinaldi (081227123547), Pak Edi (08157915550)",1,2,3
 27,Gardu Pos Ronda RT 19 RW 06,Kotagede,Rejowinangun,19,6,JP002030,"10.239.0.127
 ",ZTEGCA55643B,"-7.808778,110.398351","Andre (085102654021), Suraja (087839588000)",1,,1
-28,Pos Ronda,Mergangsan,Brontokusuman,,18,XM000341,"172.16.117.143
+28,Pos Ronda,Mergangsan,Brontokusuman,,18,XM000341,"10.239.3.242
 ",ZTEGC889B575,"-7.817276863931246, 110.37358415392112",Abdul karim (083840045617) / Rio (89652052445) / pak abdul karim (087789199994),2,,2
 29,Balai RW 5,Umbulharjo,Warungboto,21,5,XM000342,10.239.0.17,ZTEGC0BF8224,-7.807325 110.3886333,"Wasdiyanto (082222218006), ibu saffi 812-2751-075",,,0
 30,Bale RW.13 Malangan,Umbulharjo,Giwangan,38,13,XM000375,192.168.251.8,B8570BBD0BB9,"-7.835699,110.388691",Hakam (085624786509) / Pak Wahyu (81227373822),3,,3
@@ -79,7 +79,7 @@ No,Nama Lokasi,Kemantren,Kelurahan,RT,RW,ID Lifemedia,IP,SN,Titik Koordinat,PIC,
 76,Balai rw 4 Bumijo,Jetis,Bumijo,14,4,LM000863,10.239.1.176,QXTLCBD0AD9F,"-7.782111, 110.359604",Sudio (087738781900),1,,1
 77,Fasilitas Umum RW 4,Jetis,Cokrodiningratan,17,4,LM000864,10.239.0.140,QXTLCB8C2C61,"-7.778792, 110.366050",Margono (0811257194) / Pak RT16 (81578503707),,1,1
 78,Balai RW 12 Demangan,Gondokusuman,Demangan,43,12,LM000865,10.239.0.141,ZTETQBYG7205183,"-7.786492,110.385749",Basuki (082242022608),,,0
-79,Balai rw 7 Demangan,Gondokusuman,Demangan,24,7,LM000866,172.16.118.34,ZTEGC0DD6637,-7.785235 110.391952,Pak Sudar (081802675062),,,0
+79,Balai rw 7 Demangan,Gondokusuman,Demangan,24,7,LM000866,10.239.3.11,ZTEGC0DD6637,-7.785235 110.391952,Pak Sudar (081802675062),,,0
 80,Taman Paleredan Kali Gajah Wong,Umbulharjo,Giwangan,22,8,XM000390,192.168.251.30,B8570CD1240B,"-7.831091 , 110.394026",Suwarto (081802002612),5,1,6
 81,Balai RW 3 gowongan,Jetis,Gowongan,14,3,LM000867,10.239.0.144,ZTENQAJH1914497,"-7.784607,110.365365",Jamal (08179427249) / Yoga (81390387074) / Satria Bima (81242291500),,,0
 82,Balai RW 7 margoyasan gunungketur,Pakualaman,Gunungketur,28,7,XM000364,10.239.0.27,ZTEGC950D113,"-7.802762, 110.377764",Legiman Sapto (895380122788) / Bu Nurdiah (087839587770),,,0
@@ -223,7 +223,7 @@ No,Nama Lokasi,Kemantren,Kelurahan,RT,RW,ID Lifemedia,IP,SN,Titik Koordinat,PIC,
 219,Pos Ronda 31,Umbulharjo,Pandeyan,31,8,XM000451,192.168.251.43,,"-7.818056, 110.393279",Sukisno SIP (081328758788),,,
 220,Balai Kreasi,Umbulharjo,Pandeyan,23,6,XM000452,192.168.251.42,,"-7.818083, 110.385306",Slamet (08179405470),,,
 221,Pendopo Kelurahan,Kraton,Panembahan,2,3,LM000928,10.239.0.203,ZTEGCC4079DC,"-7.811598,110.364785",Joko saputro (081804134250) / Indra (87838349399),,,
-222,Pos Kamling,Kraton,Panembahan,19,6,LM000929,172.16.125.252,ZTEGC95E42D3,"-7.810636, 110.368531",Erawin (85100573210),,,
+222,Pos Kamling,Kraton,Panembahan,19,6,LM000929,10.239.3.86,ZTEGC95E42D3,"-7.810636, 110.368531",Erawin (85100573210),,,
 223,Balai Catur Warga rw 12,Kraton,Panembahan,45,12,XM000453,192.168.252.54,,"-7.8080304,110.3668198","Bambang Purwantoro (081904719559), Bu Manda (895388873773)",,,
 224,Pos Ronda RW 15,Kraton,Panembahan,57,15,LM000930,10.239.1.191,ZTEGC8A6A9DE,"-7.805595, 110.364812",Sigit/Ketua RW (081903735738) / +62 856-4321-3300,,,
 225,Masjid Condrokiranan,Kraton,Panembahan,63,16,LM000931,10.239.0.108,ZTEGCC9D6165,"-7.804702, 110.366069",Pak Sigit (813-3171-0224),,,
@@ -249,7 +249,7 @@ No,Nama Lokasi,Kemantren,Kelurahan,RT,RW,ID Lifemedia,IP,SN,Titik Koordinat,PIC,
 245,Balai RW 1,Gedongtengen,Pringgokusuman,3,1,LM000942,10.239.0.207,QXTLCB1766F9,"-7.788921,110.357601",Aprilia Wuri (081578946774)/Cipto (08179440989),,,
 246,Pos Ronda RTP 20,Gedongtengen,Pringgokusuman,69,20,XM000459,192.168.252.69,,"-7.794395, 110.359842",Budi Wibowo (081328002112),,,
 247,Balai RW Notoyudan,Gedongtengen,Pringgokusuman,83,23,LM000943,10.239.0.212,QXTLCBD01FC6,"-7.794651, 110.357529",Pak Yanto (085878797757) / pak ndaru ketua RK (081291964689),,,
-248,Balai RW 03,Gedongtengen,Pringgokusuman,,3,LM000944,10.239.0.208,ZTEGC837AE07,"-7.792221, 110.356947",Sumardiyono (081578700175),,,
+248,Balai RW 03,Gedongtengen,Pringgokusuman,,3,LM000944,10.239.3.251,ZTEGC837AE07,"-7.792221, 110.356947",Sumardiyono (081578700175),,,
 249,Balai RW 04,Gedongtengen,Pringgokusuman,17,4,LM000945,10.239.0.209,ZTEGCA59C352,"-7.7903, 110.358355
 amanah",Bp. Sutris Widiyanto (087839111272) Pak Tris Ketua RW +62 857-1394-0458,,,
 250,Masjid Al Hasanah Pringgokusuman,Gedongtengen,Pringgokusuman,16,4,LM000946,10.239.0.210,ZTEGC8703A16,"-7.7909, 110.357822",Yusron Adimulya (081328359675) / Adiasya (082220347343),,,
@@ -338,7 +338,7 @@ amanah",Bp. Sutris Widiyanto (087839111272) Pak Tris Ketua RW +62 857-1394-0458,
 330,Balai RT 33,Gondokusuman,Demangan,33,9,JP000763,10.239.1.29,ZTENQAJF208C98A,"-7.788776, 110.389534",Dhuha Nur R (083177778868),,,
 331,Pos Ronda RT 36,Gondokusuman,Demangan,36,10,JP000764,10.239.1.30,ZTEGC877A116,"-7.788624, 110.387962",Yulisulistyo (08122791935),,,
 332,Pos Ronda,Gondokusuman,Demangan,38,11,JP000765,10.239.1.31,ZTEGC950AFB5,"-7.789115, 110.382752",Bambang DSW (087839452858),,,
-333,Pos Ronda RT 01,Umbulharjo,Mujamuju,1,1,JP000960,172.16.127.238,,-7.793685 110.389429,Elang Dono (081392711468),,,
+333,Pos Ronda RT 01,Umbulharjo,Mujamuju,1,1,JP000960,10.239.3.246,,-7.793685 110.389429,Elang Dono (081392711468),,,
 334,Balai Warga Miliran,Umbulharjo,Mujamuju,,4,JP000766,10.239.1.33,RTE0QDFG8115361,"-7.799466, 110.390342",Agus Santoso (089673600553) / pak muchtasor (085600360428),,,
 335,Balai Warga atau Pos Ronda,Umbulharjo,Mujamuju,18,6,JP000961,10.239.1.173,ZTEGC95D06D5,"-7.797961, 110.396196",Fajar (082325740577) / 081226538899 (Pak Arif),,,
 336,Balai RW 09,Umbulharjo,Mujamuju,,9,JP000767,10.239.1.148,QXTLCB40990A,"-7.801564, 110.393854",Wahyoe Widiyatmo(0811292947),,,
@@ -367,7 +367,7 @@ amanah",Bp. Sutris Widiyanto (087839111272) Pak Tris Ketua RW +62 857-1394-0458,
 359,Pendopo Kaneman,Kraton,Kadipaten,9,3,LM001191,10.239.1.88,,-7.808365 110.35687,Aris Sugianta (082136350402),,,
 360,Tempat kumpul warga,Gondokusuman,Klitren,46,12,LM001192,10.239.0.158,,-7.781762 110.386402,Nusanto Wiseso (081212129178),,,
 361,Masjid Asy Syifa,Gondokusuman,Klitren,47,12,LM001193,10.239.0.159,,-7.781437 110.386145,Drs M Nawawi M.Si (08179410305),,,
-362,Ruang Publik,Ngampilan,Ngampilan,12,2,LM001290,172.16.129.250,,-7.8001317 110.3551767,Sigit Prasetya (08812712799),,,
+362,Ruang Publik,Ngampilan,Ngampilan,12,2,LM001290,10.239.2.75,,-7.8001317 110.3551767,Sigit Prasetya (08812712799),,,
 363,Pos Ronda,Kraton,Panembahan,71,17,LM001194,172.16.125.245,,"-7.803908, 110.367422",Suyono (08175450401) / Sutrisno Ketua RW (08156805842),,,
 364,Taman RW 09,Kraton,Patehan,36,9,LM001195,10.239.1.89,,"-7.809201, 110.359399",Yoga Brangta (081328287950),,,
 365,PAUD,Gondomanan,Prawirodirjan,46,14,LM001196,10.239.1.167,,"-7.804303, 110.372211",Pak Slamet (0895364845933),,,
@@ -407,7 +407,7 @@ amanah",Bp. Sutris Widiyanto (087839111272) Pak Tris Ketua RW +62 857-1394-0458,
 399,Masjid Al Furqon,Tegalrejo,Kricak,46,10,LM001296,10.239.1.99,,"-7.778961, 110.360498",Sunu Aji (089513273737),,,
 400,Balai RW 09 Jogoyudan,Jetis,Gowongan,,9,XM000674,10.239.0.151,,-7.7846619 110.367605,Alip S (085100283292),,,
 401,Balai RW 02,gondokusuman,klitren,5,2,JP000968,10.239.1.57,,-7.788574 110.379219,Erni (087726283243),,,
-402,Langgar Adz Dzikirin,Gondomanan,Ngupasan,49,13,LM001297,172.16.115.161,,-7.80285578 110.36127907,Rohib W (087732584077),,,
+402,Langgar Adz Dzikirin,Gondomanan,Ngupasan,49,13,LM001297,10.239.0.177,,-7.80285578 110.36127907,Rohib W (087732584077),,,
 403,Polsek Kraton,Kraton,Panembahan,,,XM000573,10.239.0.152,,"-7.809505, 110.364906",Pak Dwi Susanto (081367577186),,,
 404,Balai RT,Tegalrejo,Kricak,29,7,XM000569,192.168.252.80,,"-7.775534, 110.358319",Heri Isyanto (082133948116),,,
 405,Ruang publik,Tegalrejo,Karangwaru,16,5,XM000570,10.239.0.153,,"-7.774262,110.364608",Ibnu Safitri (082223307643),,,

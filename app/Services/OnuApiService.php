@@ -71,6 +71,7 @@ class OnuApiService
                         'model' => $o['model'] ?? null,
                         'deviceId' => $o['deviceId'] ?? null,
                         'state' => strtolower($o['tr069RunningState'] ?? 'offline'),
+                        'ip' => $o['ip'] ?? null,
                     ], $records);
                 }
 
