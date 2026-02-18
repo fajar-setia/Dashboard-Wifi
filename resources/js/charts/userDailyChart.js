@@ -2,6 +2,34 @@ import Chart from 'chart.js/auto';
 
 let chartInstance = null;
 
+/**
+ * Detect if dark mode is active
+ */
+function isDarkMode() {
+    return document.documentElement.classList.contains('dark');
+}
+
+/**
+ * Get chart colors based on theme
+ */
+function getChartColors() {
+    const dark = isDarkMode();
+    return {
+        gridColor: dark ? 'rgba(148,163,184,0.08)' : 'rgba(71,85,105,0.12)',
+        tickColorY: dark ? '#94a3b8' : '#475569',
+        tickColorX: dark ? '#94a3b8' : '#64748b',
+        lineColor: dark ? '#60a5fa' : '#3b82f6',
+        pointBg: dark ? '#020617' : '#ffffff',
+        pointBorder: dark ? '#60a5fa' : '#3b82f6',
+        tooltipBg: dark ? '#020617' : '#1e293b',
+        tooltipBorder: dark ? '#1e293b' : '#334155',
+        tooltipTitle: dark ? '#e5e7eb' : '#f1f5f9',
+        tooltipBody: dark ? '#93c5fd' : '#60a5fa',
+        gradientStart: dark ? 'rgba(59,130,246,0.30)' : 'rgba(59,130,246,0.20)',
+        gradientEnd: dark ? 'rgba(59,130,246,0.03)' : 'rgba(59,130,246,0.01)'
+    };
+}
+
 function tryParseDate(v) {
     if (!v && v !== 0) return null;
     // Accept ISO-like strings first
@@ -82,9 +110,10 @@ function aggregateMonthlyByDay(labels, data, ym) {
 function renderChart(ctx, proc) {
     if (chartInstance) chartInstance.destroy();
 
+    const colors = getChartColors();
     const gradient = ctx.createLinearGradient(0, 0, 0, 220);
-    gradient.addColorStop(0, 'rgba(59,130,246,0.30)');
-    gradient.addColorStop(1, 'rgba(59,130,246,0.03)');
+    gradient.addColorStop(0, colors.gradientStart);
+    gradient.addColorStop(1, colors.gradientEnd);
 
     chartInstance = new Chart(ctx, {
         type: 'line',
@@ -93,7 +122,7 @@ function renderChart(ctx, proc) {
             datasets: [{
                 label: proc.title,
                 data: proc.data,
-                borderColor: '#60a5fa',
+                borderColor: colors.lineColor,
                 backgroundColor: gradient,
                 borderWidth: 2.5,
                 tension: 0.35,
@@ -102,8 +131,8 @@ function renderChart(ctx, proc) {
                 // ✅ POINT STYLING
                 pointRadius: 3,
                 pointHoverRadius: 5,
-                pointBackgroundColor: '#020617',
-                pointBorderColor: '#60a5fa',
+                pointBackgroundColor: colors.pointBg,
+                pointBorderColor: colors.pointBorder,
                 pointBorderWidth: 2,
                 pointHoverBorderWidth: 2
             }]
@@ -119,17 +148,17 @@ function renderChart(ctx, proc) {
                 y: {
                     beginAtZero: true,
                     ticks: {
-                        color: '#cbd5f5',
+                        color: colors.tickColorY,
                         font: { size: 11 }
                     },
                     grid: {
-                        color: 'rgba(148,163,184,0.08)',
+                        color: colors.gridColor,
                         drawBorder: false
                     }
                 },
                 x: {
                     ticks: {
-                        color: '#94a3b8',
+                        color: colors.tickColorX,
                         font: { size: 11 }
                     },
                     grid: { display: false }
@@ -138,11 +167,11 @@ function renderChart(ctx, proc) {
             plugins: {
                 legend: { display: false },
                 tooltip: {
-                    backgroundColor: '#020617',
-                    borderColor: '#1e293b',
+                    backgroundColor: colors.tooltipBg,
+                    borderColor: colors.tooltipBorder,
                     borderWidth: 1,
-                    titleColor: '#e5e7eb',
-                    bodyColor: '#93c5fd',
+                    titleColor: colors.tooltipTitle,
+                    bodyColor: colors.tooltipBody,
                     padding: 10,
                     displayColors: false,
                     callbacks: {

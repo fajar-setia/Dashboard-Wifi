@@ -9,6 +9,25 @@ let isUpdating = false;
 let lastUpdateTime = null;
 
 /**
+ * Detect if dark mode is active
+ */
+function isDarkMode() {
+    return document.documentElement.classList.contains('dark');
+}
+
+/**
+ * Get chart colors based on theme
+ */
+function getChartColors() {
+    const dark = isDarkMode();
+    return {
+        gridColor: dark ? 'rgba(255,255,255,0.08)' : 'rgba(71,85,105,0.15)',
+        tickColor: dark ? '#94a3b8' : '#475569',
+        legendColor: dark ? '#d1d5db' : '#1e293b'
+    };
+}
+
+/**
  * Main function to update/render location chart
  */
 function updateLocationChart() {
@@ -50,6 +69,8 @@ function updateLocationChart() {
     }
 
     const ctx = chartElement.getContext("2d");
+    const colors = getChartColors();
+    
     locationChartInstance = new Chart(ctx, {
         type: "bar",
         data: chartData,
@@ -64,26 +85,26 @@ function updateLocationChart() {
                     ticks: {
                         stepSize: 1,
                         precision: 0,
-                        color: "#d1d5db",
+                        color: colors.tickColor,
                     },
                     grid: {
-                        color: "rgba(255,255,255,0.1)",
+                        color: colors.gridColor,
                     },
                 },
                 y: {
                     stacked: true,
                     ticks: {
-                        color: "#d1d5db",
+                        color: colors.tickColor,
                     },
                     grid: {
-                        color: "rgba(255,255,255,0.1)",
+                        color: colors.gridColor,
                     },
                 },
             },
             plugins: {
                 legend: {
                     labels: {
-                        color: "#d1d5db",
+                        color: colors.legendColor,
                     },
                 },
                 tooltip: {

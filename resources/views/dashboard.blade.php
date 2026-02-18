@@ -1,43 +1,43 @@
 <x-app-layout>
 
     <div
-        class="space-y-6 bg-gradient-to-br from-gray-100 via-gray-50 to-gray-100 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900 min-h-screen p-6">
+        class="space-y-6 bg-gradient-to-br from-slate-50 via-blue-50/30 to-cyan-50/40 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900 min-h-screen p-6">
         <!-- Loading overlay -->
         <div id="pageLoader"
-            class="fixed inset-0 bg-white/30 dark:bg-slate-900/30 backdrop-blur-sm z-50 flex items-center justify-center">
-            <div class="text-gray-800 dark:text-white text-center">
+            class="fixed inset-0 bg-white/50 dark:bg-slate-900/50 backdrop-blur-md z-50 flex items-center justify-center">
+            <div class="text-slate-800 dark:text-white text-center">
                 <div
-                    class="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-800 dark:border-white mx-auto mb-3">
+                    class="animate-spin rounded-full h-12 w-12 border-b-2 border-cyan-600 dark:border-cyan-400 mx-auto mb-3">
                 </div>
-                <p>Memuat Dashboard...</p>
+                <p class="font-medium">Memuat Dashboard...</p>
             </div>
         </div>
 
-        <h1 class="text-gray-900 dark:text-white text-3xl font-bold mb-4">
+        <h1 class="text-slate-900 dark:text-white text-3xl font-bold mb-4">
             Dashboard Overview
         </h1>
 
         <!-- Summary Cards -->
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-6">
             <div
-                class="group relative overflow-hidden bg-gradient-to-br from-blue-600 to-blue-800 rounded-xl p-6 shadow-xl hover:shadow-2xl hover:shadow-blue-500/20 transition-all duration-300 hover:scale-105">
+                class="group relative overflow-hidden bg-gradient-to-br from-cyan-500 to-blue-600 rounded-xl p-6 shadow-lg hover:shadow-2xl hover:shadow-cyan-500/30 transition-all duration-300 hover:scale-105">
                 <div
-                    class="absolute inset-0 bg-gradient-to-r from-blue-400/0 to-blue-400/0 group-hover:from-blue-400/10 group-hover:to-blue-400/20 transition-all duration-300">
+                    class="absolute inset-0 bg-gradient-to-r from-white/0 to-white/0 group-hover:from-white/10 group-hover:to-white/20 transition-all duration-300">
                 </div>
                 <div class="relative">
-                    <p class="text-blue-200 text-sm font-medium mb-2 uppercase tracking-wider">Pengguna Terhubung</p>
-                    <p id="userOnlineCount" class="text-white font-bold text-4xl">{{ $userOnline }}</p>
+                    <p class="text-cyan-100 text-sm font-semibold mb-2 uppercase tracking-wider">Pengguna Terhubung</p>
+                    <p id="userOnlineCount" class="text-white font-bold text-4xl drop-shadow-lg">{{ $userOnline }}</p>
                 </div>
             </div>
 
             <div
-                class="group relative overflow-hidden bg-gradient-to-br from-purple-600 to-purple-800 rounded-xl p-6 shadow-xl hover:shadow-2xl hover:shadow-purple-500/20 transition-all duration-300 hover:scale-105">
+                class="group relative overflow-hidden bg-gradient-to-br from-emerald-500 to-teal-600 rounded-xl p-6 shadow-lg hover:shadow-2xl hover:shadow-emerald-500/30 transition-all duration-300 hover:scale-105">
                 <div
-                    class="absolute inset-0 bg-gradient-to-r from-purple-400/0 to-purple-400/0 group-hover:from-purple-400/10 group-hover:to-purple-400/20 transition-all duration-300">
+                    class="absolute inset-0 bg-gradient-to-r from-white/0 to-white/0 group-hover:from-white/10 group-hover:to-white/20 transition-all duration-300">
                 </div>
                 <div class="relative">
-                    <p class="text-purple-200 text-sm font-medium mb-2 uppercase tracking-wider">Total ONT</p>
-                    <p class="text-white font-bold text-4xl">{{ $totalAp }}</p>
+                    <p class="text-emerald-100 text-sm font-semibold mb-2 uppercase tracking-wider">Total ONT</p>
+                    <p class="text-white font-bold text-4xl drop-shadow-lg">{{ $totalAp }}</p>
                 </div>
             </div>
         </div>
@@ -46,13 +46,13 @@
         <div class="grid gap-4 lg:grid-cols-1 rounded-xl">
             <!-- Chart Rekap Total User -->
             <div
-                class="bg-white/80 dark:bg-slate-800/50 backdrop-blur rounded-xl p-4 border border-gray-200 dark:border-slate-700/50 flex flex-col shadow-xl shadow-black/10 dark:shadow-black/20">
+                class="bg-white dark:bg-slate-800 rounded-xl p-4 border-2 border-slate-200 dark:border-slate-700 flex flex-col shadow-lg shadow-slate-200/50 dark:shadow-black/20">
                 <div class="flex justify-between items-center mb-4">
-                    <h3 class="text-gray-900 dark:text-white font-semibold">Rekap Total User</h3>
+                    <h3 class="text-slate-900 dark:text-white font-semibold">Rekap Total User</h3>
                     <div id="userChartDailyControls" class="flex items-center gap-2 pointer-events-auto relative z-10">
                         <!-- Mode -->
                         <select id="userChartMode"
-                            class="bg-white dark:bg-slate-700 border border-gray-300 dark:border-slate-600 text-gray-800 dark:text-gray-200 text-sm rounded-lg px-3 py-1.5 cursor-pointer">
+                            class="bg-white dark:bg-slate-700 border-2 border-slate-300 dark:border-slate-600 text-slate-800 dark:text-slate-200 text-sm rounded-lg px-3 py-1.5 cursor-pointer focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500">
                             <option value="weekly">Mingguan</option>
                             <option value="daily">Harian</option>
                             <option value="monthly">Bulanan</option>
@@ -87,16 +87,16 @@
 
                         <!-- Tanggal untuk Harian -->
                         <input type="date" id="dailyDateFilter"
-                            class="hidden bg-white dark:bg-slate-700 border border-gray-300 dark:border-slate-600 text-gray-800 dark:text-gray-200 text-sm rounded-lg px-3 py-1.5 cursor-pointer">
+                            class="hidden bg-white dark:bg-slate-700 border-2 border-slate-300 dark:border-slate-600 text-slate-800 dark:text-slate-200 text-sm rounded-lg px-3 py-1.5 cursor-pointer focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500">
 
                         <!-- Tahun -->
                         <select id="userChartYearFilter"
-                            class="hidden bg-white dark:bg-slate-700 border border-gray-300 dark:border-slate-600 text-gray-800 dark:text-gray-200 text-sm rounded-lg px-3 py-1.5 cursor-pointer">
+                            class="hidden bg-white dark:bg-slate-700 border-2 border-slate-300 dark:border-slate-600 text-slate-800 dark:text-slate-200 text-sm rounded-lg px-3 py-1.5 cursor-pointer focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500">
                         </select>
 
                         <!-- Bulan -->
                         <select id="userChartMonthFilter"
-                            class="hidden bg-white dark:bg-slate-700 border border-gray-300 dark:border-slate-600 text-gray-800 dark:text-gray-200 text-sm rounded-lg px-3 py-1.5 cursor-pointer">
+                            class="hidden bg-white dark:bg-slate-700 border-2 border-slate-300 dark:border-slate-600 text-slate-800 dark:text-slate-200 text-sm rounded-lg px-3 py-1.5 cursor-pointer focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500">
                         </select>
                     </div>
                 </div>
@@ -104,19 +104,19 @@
                     <!-- Stats Sidebar -->
                     <div class="lg:col-span-1 space-y-4">
                         <div
-                            class="bg-gray-100 dark:bg-slate-700/50 rounded-lg p-4 border border-gray-200 dark:border-slate-600/50">
-                            <div class="text-sm text-gray-500 dark:text-gray-400 mb-1">Maximum</div>
-                            <div class="text-2xl font-bold text-blue-400" id="statMaxUsers">0</div>
+                            class="bg-gradient-to-br from-cyan-50 to-blue-50 dark:bg-gradient-to-br dark:from-slate-700 dark:to-slate-700/90 rounded-lg p-4 border-2 border-cyan-200 dark:border-cyan-900/50 shadow-sm">
+                            <div class="text-sm text-slate-600 dark:text-slate-400 mb-1 font-medium">Maximum</div>
+                            <div class="text-2xl font-bold text-cyan-600 dark:text-cyan-400" id="statMaxUsers">0</div>
                         </div>
                         <div
-                            class="bg-gray-100 dark:bg-slate-700/50 rounded-lg p-4 border border-gray-200 dark:border-slate-600/50">
-                            <div class="text-sm text-gray-500 dark:text-gray-400 mb-1">Minimum</div>
-                            <div class="text-2xl font-bold text-blue-400" id="statMinUsers">0</div>
+                            class="bg-gradient-to-br from-blue-50 to-indigo-50 dark:bg-gradient-to-br dark:from-slate-700 dark:to-slate-700/90 rounded-lg p-4 border-2 border-blue-200 dark:border-blue-900/50 shadow-sm">
+                            <div class="text-sm text-slate-600 dark:text-slate-400 mb-1 font-medium">Minimum</div>
+                            <div class="text-2xl font-bold text-blue-600 dark:text-blue-400" id="statMinUsers">0</div>
                         </div>
                         <div
-                            class="bg-gray-100 dark:bg-slate-700/50 rounded-lg p-4 border border-gray-200 dark:border-slate-600/50">
-                            <div class="text-sm text-gray-500 dark:text-gray-400 mb-1">Average</div>
-                            <div class="text-2xl font-bold text-blue-400" id="statAvgUsers">0</div>
+                            class="bg-gradient-to-br from-indigo-50 to-purple-50 dark:bg-gradient-to-br dark:from-slate-700 dark:to-slate-700/90 rounded-lg p-4 border-2 border-indigo-200 dark:border-indigo-900/50 shadow-sm">
+                            <div class="text-sm text-slate-600 dark:text-slate-400 mb-1 font-medium">Average</div>
+                            <div class="text-2xl font-bold text-indigo-600 dark:text-indigo-400" id="statAvgUsers">0</div>
                         </div>
                     </div>
 
@@ -130,24 +130,24 @@
 
         <!-- Rekap Mingguan & Bulanan Per Lokasi -->
         <div
-            class="bg-white/80 dark:bg-slate-800/50 backdrop-blur rounded-xl p-6 shadow-xl border border-gray-200 dark:border-slate-700/50">
+            class="bg-white dark:bg-slate-800 rounded-xl p-6 shadow-lg border-2 border-slate-200 dark:border-slate-700">
 
             <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
 
                 <!-- Kiri: Search & Filter -->
                 <div class="lg:col-span-1 space-y-4">
-                    <h3 class="text-gray-900 dark:text-white font-semibold text-lg">Filter</h3>
+                    <h3 class="text-slate-900 dark:text-white font-semibold text-lg">Filter</h3>
 
                     <div>
-                        <label class="text-gray-600 dark:text-gray-300 text-sm block mb-2">Cari Lokasi</label>
+                        <label class="text-slate-600 dark:text-slate-300 text-sm block mb-2 font-medium">Cari Lokasi</label>
                         <input type="text" id="locationSearch" placeholder="Cari lokasi..."
-                            class="w-full px-3 py-2 rounded bg-white dark:bg-slate-700 text-gray-900 dark:text-white text-sm border border-gray-300 dark:border-slate-600 focus:ring-blue-500">
+                            class="w-full px-3 py-2 rounded bg-white dark:bg-slate-700 text-slate-900 dark:text-white text-sm border-2 border-slate-300 dark:border-slate-600 focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500">
                     </div>
 
                     <div>
-                        <label class="text-gray-600 dark:text-gray-300 text-sm block mb-2">Kemantren</label>
+                        <label class="text-slate-600 dark:text-slate-300 text-sm block mb-2 font-medium">Kemantren</label>
                         <select id="kemantrenFilter"
-                            class="w-full px-3 py-2 rounded bg-white dark:bg-slate-700 text-gray-900 dark:text-white text-sm border border-gray-300 dark:border-slate-600 focus:ring-blue-500">
+                            class="w-full px-3 py-2 rounded bg-white dark:bg-slate-700 text-slate-900 dark:text-white text-sm border-2 border-slate-300 dark:border-slate-600 focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500">
                             <option value="">Semua</option>
                             @foreach ($kemantrenList as $km)
                                 <option value="{{ $km }}">{{ $km }}</option>
@@ -156,25 +156,25 @@
                     </div>
 
                     <button onclick="filterLocationChart()"
-                        class="w-full px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded text-white text-sm font-medium">
+                        class="w-full px-4 py-2 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 rounded-lg text-white text-sm font-semibold shadow-md hover:shadow-lg transition-all duration-200">
                         Filter
                     </button>
 
                     <!-- TAMBAHAN BARU: Status & Controls -->
-                    <div class="border-t border-gray-200 dark:border-slate-600 pt-4 mt-4 space-y-3">
+                    <div class="border-t-2 border-slate-200 dark:border-slate-600 pt-4 mt-4 space-y-3">
                         <div class="flex items-center justify-between">
-                            <span class="text-gray-500 dark:text-gray-400 text-xs">Status Update</span>
+                            <span class="text-slate-600 dark:text-slate-400 text-xs font-medium">Status Update</span>
                             <div id="chartLoadingIndicator" class="hidden">
-                                <div class="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-400"></div>
+                                <div class="animate-spin rounded-full h-4 w-4 border-b-2 border-cyan-500"></div>
                             </div>
                         </div>
 
-                        <div id="lastUpdateTime" class="text-gray-500 dark:text-gray-400 text-xs">
+                        <div id="lastUpdateTime" class="text-slate-600 dark:text-slate-400 text-xs">
                             Belum ada update
                         </div>
 
                         <button id="manualRefreshBtn"
-                            class="w-full px-3 py-2 bg-gray-200 dark:bg-slate-600 hover:bg-gray-300 dark:hover:bg-slate-500 rounded text-gray-800 dark:text-white text-sm font-medium flex items-center justify-center gap-2"
+                            class="w-full px-3 py-2 bg-slate-200 dark:bg-slate-600 hover:bg-slate-300 dark:hover:bg-slate-500 rounded-lg text-slate-800 dark:text-white text-sm font-semibold flex items-center justify-center gap-2 border-2 border-slate-300 dark:border-slate-500 transition-all duration-200"
                             title="Refresh manual">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -189,15 +189,15 @@
                 <!-- Kanan: Chart & Kontrol -->
                 <div class="lg:col-span-3 space-y-4">
                     <div class="flex justify-between items-center">
-                        <h3 class="text-gray-900 dark:text-white font-semibold text-lg">Rekap Per Lokasi</h3>
+                        <h3 class="text-slate-900 dark:text-white font-semibold text-lg">Rekap Per Lokasi</h3>
                         <div class="flex gap-2">
                             <select id="chartPeriod" onchange="updateLocationChart()"
-                                class="px-3 py-1.5 bg-white dark:bg-slate-700 border border-gray-300 dark:border-slate-600 text-gray-800 dark:text-gray-200 text-sm rounded-lg focus:ring-blue-500">
+                                class="px-3 py-1.5 bg-white dark:bg-slate-700 border-2 border-slate-300 dark:border-slate-600 text-slate-800 dark:text-slate-200 text-sm rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500">
                                 <option value="weekly">Mingguan</option>
                                 <option value="monthly">Bulanan</option>
                             </select>
                             <select id="monthFilter" onchange="updateLocationChart()"
-                                class="px-3 py-1.5 bg-white dark:bg-slate-700 border border-gray-300 dark:border-slate-600 text-gray-800 dark:text-gray-200 text-sm rounded-lg focus:ring-blue-500 hidden">
+                                class="px-3 py-1.5 bg-white dark:bg-slate-700 border-2 border-slate-300 dark:border-slate-600 text-slate-800 dark:text-slate-200 text-sm rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 hidden">
                                 @foreach ($months as $num => $name)
                                     <option value="{{ $num }}" {{ $num == $currentMonth ? 'selected' : '' }}>
                                         {{ $name }}
@@ -205,7 +205,7 @@
                                 @endforeach
                             </select>
                             <select id="topLimit" onchange="updateLocationChart()"
-                                class="px-3 py-1.5 bg-white dark:bg-slate-700 border border-gray-300 dark:border-slate-600 text-gray-800 dark:text-gray-200 text-sm rounded-lg focus:ring-blue-500">
+                                class="px-3 py-1.5 bg-white dark:bg-slate-700 border-2 border-slate-300 dark:border-slate-600 text-slate-800 dark:text-slate-200 text-sm rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500">
                                 <option value="5">Top 5</option>
                                 <option value="8" selected>Top 8</option>
                                 <option value="10">Top 10</option>
@@ -238,10 +238,10 @@
                     </div>
 
                     <!-- TAMBAHAN BARU: Notification Area -->
-                    <div id="chartNotification" class="hidden px-4 py-2 rounded text-white text-sm"></div>
+                    <div id="chartNotification" class="hidden px-4 py-2 rounded-lg text-white text-sm font-medium"></div>
 
                     <div
-                        class="bg-gray-100 dark:bg-slate-700/50 rounded-lg p-4 border border-gray-200 dark:border-slate-600/50">
+                        class="bg-gradient-to-br from-slate-50 to-blue-50/30 dark:bg-gradient-to-br dark:from-slate-700 dark:to-slate-700/90 rounded-lg p-4 border-2 border-slate-200 dark:border-slate-600 shadow-sm">
                         <canvas id="locationChart" class="w-full" style="max-height: 300px;"></canvas>
                     </div>
 
@@ -265,9 +265,9 @@
         </div>
         <!-- Rekap User Online Per Lokasi -->
         <div
-            class="bg-white/80 dark:bg-slate-800/50 backdrop-blur rounded-xl p-6 shadow-xl border border-gray-200 dark:border-slate-700/50">
+            class="bg-white dark:bg-slate-800 rounded-xl p-6 shadow-lg border-2 border-slate-200 dark:border-slate-700">
 
-            <h3 class="text-gray-900 dark:text-white font-semibold text-lg mb-6">Rekap User Online Per Lokasi</h3>
+            <h3 class="text-slate-900 dark:text-white font-semibold text-lg mb-6">Rekap User Online Per Lokasi</h3>
 
             <div class="space-y-4">
 
@@ -276,44 +276,44 @@
 
                         <!-- Box 30% - Lokasi -->
                         <div
-                            class="col-span-3 bg-gray-100 dark:bg-slate-700/50 p-4 rounded-lg text-gray-900 dark:text-white space-y-2 border border-gray-200 dark:border-slate-600/50">
-                            <p class="font-semibold text-lg text-blue-600 dark:text-blue-400">
+                            class="col-span-3 bg-gradient-to-br from-slate-50 to-blue-50/40 dark:bg-gradient-to-br dark:from-slate-700 dark:to-slate-700/80 p-4 rounded-lg text-slate-900 dark:text-white space-y-2 border-2 border-slate-200 dark:border-slate-600 shadow-sm">
+                            <p class="font-semibold text-lg text-cyan-600 dark:text-cyan-400">
                                 {{ $locationData['location'] }}
                             </p>
-                            <div class="text-xs space-y-1 text-gray-600 dark:text-gray-300">
-                                <p><span class="text-gray-500 dark:text-gray-400">Kemantren:</span>
+                            <div class="text-xs space-y-1 text-slate-600 dark:text-slate-300">
+                                <p><span class="text-slate-500 dark:text-slate-400 font-medium">Kemantren:</span>
                                     {{ $locationData['kemantren'] }}</p>
-                                <p><span class="text-gray-500 dark:text-gray-400">Kelurahan:</span>
+                                <p><span class="text-slate-500 dark:text-slate-400 font-medium">Kelurahan:</span>
                                     {{ $locationData['kelurahan'] }}</p>
-                                <p><span class="text-gray-500 dark:text-gray-400">RT/RW:</span> {{ $locationData['rt'] }} /
+                                <p><span class="text-slate-500 dark:text-slate-400 font-medium">RT/RW:</span> {{ $locationData['rt'] }} /
                                     {{ $locationData['rw'] }}
                                 </p>
-                                <p><span class="text-gray-500 dark:text-gray-400">SN:</span> {{ $locationData['sn'] }}</p>
+                                <p><span class="text-slate-500 dark:text-slate-400 font-medium">SN:</span> {{ $locationData['sn'] }}</p>
                             </div>
-                            <div class="pt-2 border-t border-gray-300 dark:border-slate-600">
-                                <p class="text-sm text-gray-500 dark:text-gray-400">User Terhubung</p>
-                                <p class="text-2xl font-bold text-green-400">{{ $locationData['count'] }}</p>
+                            <div class="pt-2 border-t-2 border-slate-200 dark:border-slate-600">
+                                <p class="text-sm text-slate-600 dark:text-slate-400 font-medium">User Terhubung</p>
+                                <p class="text-2xl font-bold text-emerald-500 dark:text-emerald-400">{{ $locationData['count'] }}</p>
                             </div>
                         </div>
 
                         <!-- Box 70% - Detail Pengguna (tampilkan maksimal 5) -->
                         <div
-                            class="col-span-7 bg-gray-100 dark:bg-slate-700/50 p-4 rounded-lg text-gray-900 dark:text-white border border-gray-200 dark:border-slate-600/50 overflow-x-auto">
+                            class="col-span-7 bg-white dark:bg-slate-700 p-4 rounded-lg text-slate-900 dark:text-white border-2 border-slate-200 dark:border-slate-600 overflow-x-auto shadow-sm">
 
-                            <table class="w-full text-left text-gray-600 dark:text-gray-300 text-sm table-auto min-w-full">
-                                <thead class="border-b border-gray-300 dark:border-slate-600">
+                            <table class="w-full text-left text-slate-600 dark:text-slate-300 text-sm table-auto min-w-full">
+                                <thead class="border-b-2 border-slate-300 dark:border-slate-600">
                                     <tr>
-                                        <th class="pb-3 font-semibold text-gray-700 dark:text-gray-200 w-2/6">Nama Perangkat
+                                        <th class="pb-3 font-semibold text-slate-700 dark:text-slate-200 w-2/6">Nama Perangkat
                                         </th>
-                                        <th class="pb-3 font-semibold text-gray-700 dark:text-gray-200 w-2/6">Alamat IP</th>
-                                        <th class="pb-3 font-semibold text-gray-700 dark:text-gray-200 w-2/6">Alamat MAC
+                                        <th class="pb-3 font-semibold text-slate-700 dark:text-slate-200 w-2/6">Alamat IP</th>
+                                        <th class="pb-3 font-semibold text-slate-700 dark:text-slate-200 w-2/6">Alamat MAC
                                         </th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     @foreach (array_slice($locationData['clients'], 0, 5) as $client)
                                         <tr
-                                            class="border-b border-gray-200 dark:border-slate-600/30 hover:bg-gray-50 dark:hover:bg-slate-600/20 transition-colors duration-200">
+                                            class="border-b border-slate-200 dark:border-slate-600/30 hover:bg-cyan-50 dark:hover:bg-slate-600/20 transition-colors duration-200">
                                             <td class="py-3">{{ $client['wifi_terminal_name'] ?? 'Unknown' }}</td>
                                             <td class="py-3">{{ $client['wifi_terminal_ip'] ?? '-' }}</td>
                                             <td class="py-3 text-xs">{{ $client['wifi_terminal_mac'] ?? '-' }}</td>
@@ -324,7 +324,7 @@
 
                             <div class="mt-3 flex justify-end">
                                 <button onclick="fetchLocationClients('{{ $locationData['sn'] }}')"
-                                    class="px-3 py-1.5 bg-gray-200 dark:bg-slate-600 hover:bg-gray-300 dark:hover:bg-slate-500 rounded text-sm text-gray-800 dark:text-white">Lihat
+                                    class="px-3 py-1.5 bg-cyan-100 dark:bg-slate-600 hover:bg-cyan-200 dark:hover:bg-slate-500 rounded-lg text-sm text-cyan-700 dark:text-white font-medium border border-cyan-300 dark:border-slate-500 transition-all duration-200">Lihat
                                     Semua</button>
                             </div>
 
@@ -365,22 +365,38 @@
     </div>
 
     <style>
+        /* Light mode scrollbar */
         ::-webkit-scrollbar {
             width: 8px;
             height: 8px;
         }
 
         ::-webkit-scrollbar-track {
-            background: #1e293b;
+            background: #e2e8f0;
         }
 
         ::-webkit-scrollbar-thumb {
-            background: #475569;
+            background: #94a3b8;
             border-radius: 4px;
         }
 
         ::-webkit-scrollbar-thumb:hover {
             background: #64748b;
+        }
+
+        /* Dark mode scrollbar */
+        @media (prefers-color-scheme: dark) {
+            ::-webkit-scrollbar-track {
+                background: #1e293b;
+            }
+
+            ::-webkit-scrollbar-thumb {
+                background: #475569;
+            }
+
+            ::-webkit-scrollbar-thumb:hover {
+                background: #64748b;
+            }
         }
     </style>
 

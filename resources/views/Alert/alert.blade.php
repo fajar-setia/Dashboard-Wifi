@@ -9,12 +9,12 @@
     <div class="flex-1 p-6 space-y-6">
         <!-- Loading overlay -->
         <div id="pageLoader"
-            class="fixed inset-0 bg-white/30 dark:bg-slate-900/30 backdrop-blur-sm z-50 flex items-center justify-center">
-            <div class="text-gray-800 dark:text-white text-center">
+            class="fixed inset-0 bg-white/50 dark:bg-slate-900/50 backdrop-blur-md z-50 flex items-center justify-center">
+            <div class="text-slate-800 dark:text-white text-center">
                 <div
-                    class="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-800 dark:border-white mx-auto mb-3">
+                    class="animate-spin rounded-full h-12 w-12 border-b-2 border-cyan-600 dark:border-cyan-400 mx-auto mb-3">
                 </div>
-                <p>Memuat Alert...</p>
+                <p class="font-medium">Memuat Alert...</p>
             </div>
         </div>
 
@@ -23,72 +23,72 @@
 
             <!-- Total Alerts Today -->
             <div
-                class="bg-gradient-to-br from-blue-600 to-blue-800 rounded-xl p-6 shadow-xl hover:shadow-2xl hover:shadow-blue-500/20 transition-all duration-300 hover:scale-105">
-                <p class="text-gray-300 text-sm">Total Alerts Today</p>
-                <p class="text-3xl font-bold text-white mt-2">
+                class="bg-gradient-to-br from-cyan-500 to-blue-600 rounded-xl p-6 shadow-lg hover:shadow-2xl hover:shadow-cyan-500/30 transition-all duration-300 hover:scale-105">
+                <p class="text-cyan-100 text-sm font-semibold uppercase tracking-wider">Total Alerts Today</p>
+                <p class="text-4xl font-bold text-white mt-2 drop-shadow-lg">
                     {{ $alertCount ?? 0 }}
                 </p>
             </div>
 
             <!-- Active Users -->
             <div
-                class="bg-gradient-to-br from-purple-600 to-purple-800 rounded-xl p-6 shadow-xl hover:shadow-2xl hover:shadow-purple-500/20 transition-all duration-300 hover:scale-105">
-                <p class="text-gray-300 text-sm">Active Users</p>
-                <p class="text-3xl font-bold text-white mt-2">
+                class="bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl p-6 shadow-lg hover:shadow-2xl hover:shadow-indigo-500/30 transition-all duration-300 hover:scale-105">
+                <p class="text-indigo-100 text-sm font-semibold uppercase tracking-wider">Active Users</p>
+                <p class="text-4xl font-bold text-white mt-2 drop-shadow-lg">
                     {{ $activeUsers ?? 0 }}
                 </p>
             </div>
 
             <!-- Connected AP -->
             <div
-                class="bg-gradient-to-br from-emerald-600 to-emerald-800 rounded-xl p-6 shadow-xl hover:shadow-2xl hover:shadow-emerald-500/20 transition-all duration-300 hover:scale-105">
-                <p class="text-gray-300 text-sm">Connected AP</p>
-                <p class="text-3xl font-bold text-white mt-2">
+                class="bg-gradient-to-br from-emerald-500 to-teal-600 rounded-xl p-6 shadow-lg hover:shadow-2xl hover:shadow-emerald-500/30 transition-all duration-300 hover:scale-105">
+                <p class="text-emerald-100 text-sm font-semibold uppercase tracking-wider">Connected AP</p>
+                <p class="text-4xl font-bold text-white mt-2 drop-shadow-lg">
                     {{ collect($aps)->count() }}
                 </p>
             </div>
         </div>
 
         <!-- User Alert Section -->
-        <div class="bg-white dark:bg-gray-800 rounded-lg p-5 shadow border border-gray-200 dark:border-gray-700">
+        <div class="bg-white dark:bg-slate-800 rounded-lg p-5 shadow-lg border-2 border-slate-200 dark:border-slate-700">
             <div class="flex items-center gap-2 mb-3">
                 <div class="w-4 h-4 rounded-full bg-red-600"></div>
-                <p class="text-gray-900 dark:text-white font-semibold">User Alert</p>
-                <span class="text-gray-500 dark:text-gray-400 text-sm">{{ $alertCount ?? 0 }}</span>
+                <p class="text-slate-900 dark:text-white font-semibold">User Alert</p>
+                <span class="text-slate-600 dark:text-slate-400 text-sm font-medium">{{ $alertCount ?? 0 }}</span>
             </div>
 
             <div
-                class="h-56 bg-gray-50 dark:bg-gray-900/40 rounded-lg border border-gray-200 dark:border-gray-700 p-4 overflow-y-auto">
+                class="h-56 bg-slate-50 dark:bg-slate-900 rounded-lg border-2 border-slate-200 dark:border-slate-700 p-4 overflow-y-auto">
                 @if (session('api_error'))
-                    <div class="text-red-400 text-sm mb-3 flex items-center gap-2">
+                    <div class="text-red-500 dark:text-red-400 text-sm mb-3 flex items-center gap-2">
                         <span class="w-2 h-2 rounded-full bg-red-500 animate-pulse"></span>
                         <span>CMSnya error Wak{{ session('api_error') }}</span>
                     </div>
                 @endif
                 {{-- ALERT: AP OFFLINE --}}
                 @foreach ($apOffline ?? [] as $ap)
-                    <div class="text-red-400 text-sm mb-2 flex items-center gap-2">
+                    <div class="text-red-600 dark:text-red-400 text-sm mb-2 flex items-center gap-2 font-medium">
                         <span class="w-2 h-2 rounded-full bg-red-500"></span>
                         <span>AP Offline: {{ $ap['sn'] ?? 'Anonymous' }}</span>
                     </div>
                 @endforeach
 
                 @if (($alertCount ?? 0) === 0)
-                    <p class="text-gray-500 text-sm text-center mt-10">Tidak ada alert.</p>
+                    <p class="text-slate-500 dark:text-slate-400 text-sm text-center mt-10">Tidak ada alert.</p>
                 @endif
 
             </div>
         </div>
 
         <!-- Actions Section -->
-        <div class="bg-white dark:bg-gray-800 rounded-lg p-5 shadow border border-gray-200 dark:border-gray-700">
-            <p class="text-gray-900 dark:text-white font-semibold mb-3">New Device</p>
+        <div class="bg-white dark:bg-slate-800 rounded-lg p-5 shadow-lg border-2 border-slate-200 dark:border-slate-700">
+            <p class="text-slate-900 dark:text-white font-semibold mb-3">New Device</p>
             <div
-                class="h-40 bg-gray-50 dark:bg-gray-900/40 rounded-lg border border-gray-200 dark:border-gray-700 px-4 py-3 overflow-y-auto">
+                class="h-40 bg-slate-50 dark:bg-slate-900 rounded-lg border-2 border-slate-200 dark:border-slate-700 px-4 py-3 overflow-y-auto">
                 {{-- ALERT: DEVICE BARU --}}
                 @foreach ($deviceCount ?? [] as $mac)
-                    <div class="text-yellow-600 dark:text-yellow-300 text-sm mb-2 flex items-center gap-2">
-                        <span class="w-2 h-2 rounded-full bg-yellow-400"></span>
+                    <div class="text-amber-600 dark:text-amber-400 text-sm mb-2 flex items-center gap-2 font-medium">
+                        <span class="w-2 h-2 rounded-full bg-amber-400"></span>
                         <span>Device Baru: {{ $mac }}</span>
                     </div>
                 @endforeach
