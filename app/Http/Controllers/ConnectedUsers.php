@@ -5,11 +5,57 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Collection;
 use Illuminate\Pagination\LengthAwarePaginator;
 use App\Services\OnuApiService;
 
 class ConnectedUsers extends Controller
 {
+    /**
+     * Baca CSV dan index by IP.
+     * CSV hanya untuk lokasi (nama_lokasi, kemantren, kelurahan, rt, rw, id_lifemedia).
+     * Semua data lain dari API.
+     */
+    private function readLocationMapByIp()
+    {
+        $paths = [
+            storage_path('app/public/ACSfiks.csv'),
+            public_path('storage/ACSfiks.csv'),
+            storage_path('app/ACSfiks.csv'),
+            base_path('storage/ACSfiks.csv'),
+        ];
+        $file = collect($paths)->first(fn($p) => file_exists($p));
+        if (!$file) return collect();
+        $lines = array_filter(array_map('trim', file($file)));
+        if (count($lines) < 2) return collect();
+        $header = array_map(
+            fn($h) => strtolower(str_replace(' ', '_', trim($h))),
+            str_getcsv(array_shift($lines))
+        );
+        $headerCount = count($header);
+        return collect($lines)
+            ->map(function ($line) use ($header, $headerCount) {
+                $row = str_getcsv($line);
+                if (count($row) < $headerCount) {
+                    $row = array_pad($row, $headerCount, null);
+                } elseif (count($row) > $headerCount) {
+                    $row = array_slice($row, 0, $headerCount);
+                }
+                return array_combine($header, $row);
+            })
+            ->filter(fn($r) => !empty($r['ip']))
+            ->mapWithKeys(fn($r) => [
+                trim($r['ip']) => [
+                    'location'     => $r['nama_lokasi']  ?? null,
+                    'kemantren'    => $r['kemantren']    ?? null,
+                    'kelurahan'    => $r['kelurahan']    ?? null,
+                    'rt'           => $r['rt']           ?? null,
+                    'rw'           => $r['rw']           ?? null,
+                    'id_lifemedia' => $r['id_lifemedia'] ?? null,
+                ],
+            ]);
+    }
     public function index(Request $request)
     {
         try {
@@ -49,41 +95,37 @@ class ConnectedUsers extends Controller
             $perPage = (int) $request->get('perPage', 5);
             $page = (int) $request->get('page', 1);
 
-            // Try to get ONT -> location map from cache (populated by DashboardController)
-            $ontMap = cache()->get('ont_map_paket_all', []);
+            // Load lokasi dari CSV, di-index by IP
+            $locationByIp = Cache::remember(
+                'ont_location_by_ip',
+                86400,
+                fn() => $this->readLocationMapByIp()
+            );
 
             $start = max(0, ($page - 1) * $perPage);
-            $collected = 0; // total matched items
+            $collected = 0;
             $pageItems = [];
 
             foreach ($raw as $ap) {
                 $clients = $ap['wifiClients'] ?? [];
 
-                // Attach mapping data if available
+                // SN dan IP dari API
                 $rawSn = (string) ($ap['sn'] ?? '');
-                $snTrim = trim($rawSn);
-                $snKey1 = strtoupper($snTrim);
-                $snKey2 = preg_replace('/[^A-Z0-9]/', '', $snKey1); // remove non-alnum for fallback
+                $sn    = $this->normalizeSn($rawSn);
+                $apiIp = trim($ap['ip'] ?? '');
 
-                $info = null;
-                if ($snKey1 && isset($ontMap[$snKey1])) {
-                    $info = $ontMap[$snKey1];
-                } elseif ($snKey2 && isset($ontMap[$snKey2])) {
-                    $info = $ontMap[$snKey2];
-                }
+                // Lookup lokasi dari CSV by IP dari API
+                $location = $apiIp ? $locationByIp->get($apiIp) : null;
 
-                // normalize stored SN to cleaned form if possible
-                $ap['sn'] = $snKey1 !== '' ? $snKey1 : ($ap['sn'] ?? '');
-
-                // prefer mapping info, otherwise try API-provided fields; coerce to strings
-                $ap['location'] = is_array($info['location'] ?? null) ? implode(', ', $info['location']) : ($info['location'] ?? ($ap['location'] ?? '-'));
-                $ap['kemantren'] = is_array($info['kemantren'] ?? null) ? implode(', ', $info['kemantren']) : ($info['kemantren'] ?? ($ap['kemantren'] ?? '-'));
-                $ap['kelurahan'] = is_array($info['kelurahan'] ?? null) ? implode(', ', $info['kelurahan']) : ($info['kelurahan'] ?? ($ap['kelurahan'] ?? '-'));
-                $ap['rt'] = (string) ($info['rt'] ?? ($ap['rt'] ?? '-'));
-                $ap['rw'] = (string) ($info['rw'] ?? ($ap['rw'] ?? '-'));
-                $ap['ip'] = (string) ($info['ip'] ?? ($ap['ip'] ?? '-'));
-                $ap['pic'] = (string) ($info['pic'] ?? ($ap['pic'] ?? '-'));
-                $ap['coordinate'] = (string) ($info['coordinate'] ?? ($ap['coordinate'] ?? '-'));
+                // Semua data dari API, lokasi dari CSV
+                $ap['sn']          = $sn ?: $rawSn;
+                $ap['ip']          = $apiIp ?: '-';
+                $ap['location']    = $location['location']     ?? 'Lokasi Tidak Diketahui';
+                $ap['kemantren']   = $location['kemantren']    ?? '-';
+                $ap['kelurahan']   = $location['kelurahan']    ?? '-';
+                $ap['rt']          = (string) ($location['rt'] ?? '');
+                $ap['rw']          = (string) ($location['rw'] ?? '');
+                $ap['id_lifemedia'] = $location['id_lifemedia'] ?? '-';
 
                 $ap['connected'] =
                     count($clients['5G'] ?? []) +
@@ -176,31 +218,27 @@ class ConnectedUsers extends Controller
                 return response()->json(['error' => 'Invalid API response'], 500);
             }
 
-            $ontMap = cache()->get('ont_map_paket_all', []);
+            $locationByIp = Cache::remember(
+                'ont_location_by_ip',
+                86400,
+                fn() => $this->readLocationMapByIp()
+            );
+
             $data = [];
-
             foreach ($raw as $ap) {
-                $rawSn = (string) ($ap['sn'] ?? '');
-                $snTrim = trim($rawSn);
-                $snKey1 = strtoupper($snTrim);
-                $snKey2 = preg_replace('/[^A-Z0-9]/', '', $snKey1);
-
-                $info = null;
-                if ($snKey1 && isset($ontMap[$snKey1])) {
-                    $info = $ontMap[$snKey1];
-                } elseif ($snKey2 && isset($ontMap[$snKey2])) {
-                    $info = $ontMap[$snKey2];
-                }
+                $sn    = $this->normalizeSn($ap['sn'] ?? null) ?? ($ap['sn'] ?? '-');
+                $apiIp = trim($ap['ip'] ?? '');
+                $info  = $apiIp ? $locationByIp->get($apiIp) : null;
 
                 $data[] = [
-                    'Lokasi' => $info['location'] ?? ($ap['location'] ?? '-'),
-                    'SN' => $snKey1 !== '' ? $snKey1 : ($ap['sn'] ?? '-'),
-                    'Model' => $ap['model'] ?? '-',
-                    'IP' => $ap['ip'] ?? '-',
-                    'Kemantren' => $info['kemantren'] ?? ($ap['kemantren'] ?? '-'),
-                    'Kelurahan' => $info['kelurahan'] ?? ($ap['kelurahan'] ?? '-'),
-                    'RT/RW' => ($info['rt'] ?? '-') . ' / ' . ($info['rw'] ?? '-'),
-                    'State' => ucfirst($ap['state'] ?? 'unknown'),
+                    'Lokasi'    => $info['location']  ?? '-',
+                    'SN'        => $sn,
+                    'Model'     => $ap['model']        ?? '-',
+                    'IP'        => $apiIp               ?: '-',
+                    'Kemantren' => $info['kemantren']  ?? '-',
+                    'Kelurahan' => $info['kelurahan']  ?? '-',
+                    'RT/RW'     => ($info['rt'] ?? '-') . ' / ' . ($info['rw'] ?? '-'),
+                    'State'     => ucfirst($ap['state'] ?? 'unknown'),
                 ];
             }
 
@@ -210,4 +248,29 @@ class ConnectedUsers extends Controller
             return response()->json(['error' => $e->getMessage()], 500);
         }
     }
+
+    /* =========================
+     | UTILS
+     ========================= */
+
+    private function normalizeSn(?string $sn): ?string
+    {
+        if (!$sn)
+            return null;
+
+        // Trim whitespace dan newlines
+        $sn = trim($sn);
+        
+        // Remove prefix model jika ada (F609-, F612W-, dll)
+        if (str_contains($sn, '-')) {
+            $sn = trim(substr($sn, strrpos($sn, '-') + 1));
+        }
+
+        // Uppercase dan remove semua whitespace tersembunyi
+        $sn = strtoupper(preg_replace('/\s+/', '', $sn));
+
+        return $sn;
+    }
+
 }
+

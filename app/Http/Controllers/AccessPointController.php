@@ -19,92 +19,63 @@ class AccessPointController extends Controller
         if (!$sn)
             return null;
 
-        // Trim whitespace dan newlines
         $sn = trim($sn);
-        
-        // Remove prefix model jika ada (F609-, F612W-, dll)
+
         if (str_contains($sn, '-')) {
             $sn = trim(substr($sn, strrpos($sn, '-') + 1));
         }
 
-        // Uppercase dan remove semua whitespace tersembunyi
         $sn = strtoupper(preg_replace('/\s+/', '', $sn));
 
         return $sn;
     }
 
-    private function loadOntLocations(): Collection
+    /**
+     * Baca CSV dan index by IP.
+     * CSV hanya dipakai untuk mencari lokasi (nama_lokasi, kemantren, kelurahan, rt, rw).
+     * Semua data lain (sn, model, ip, state) diambil dari API.
+     */
+    private function readLocationMapByIp(): Collection
     {
-        // Cek multiple paths
         $paths = [
             storage_path('app/public/ACSfiks.csv'),
-            public_path('storage/ACSfiks.csv'),  // ← PATH INI
+            public_path('storage/ACSfiks.csv'),
             storage_path('app/ACSfiks.csv'),
             base_path('storage/ACSfiks.csv'),
         ];
-
         $file = collect($paths)->first(fn($p) => file_exists($p));
-        if (!$file)
-            return collect();
+        if (!$file) return collect();
 
         $lines = array_filter(array_map('trim', file($file)));
-        if (count($lines) < 2)
-            return collect();
+        if (count($lines) < 2) return collect();
 
         $header = array_map(
             fn($h) => strtolower(str_replace(' ', '_', trim($h))),
             str_getcsv(array_shift($lines))
         );
-
         $headerCount = count($header);
 
         return collect($lines)
             ->map(function ($line) use ($header, $headerCount) {
                 $row = str_getcsv($line);
-
                 if (count($row) < $headerCount) {
                     $row = array_pad($row, $headerCount, null);
                 } elseif (count($row) > $headerCount) {
                     $row = array_slice($row, 0, $headerCount);
                 }
-
                 return array_combine($header, $row);
             })
-            ->filter(fn($r) => !empty($r['sn']))
-            ->mapWithKeys(function ($r) {
-                $sn = $this->normalizeSn($r['sn'] ?? null);
-
-                return [
-                    $sn => [
-                        'kelurahan' => $r['kelurahan'] ?? null,
-                        'kemantren' => $r['kemantren'] ?? null,
-                        'ip' => $r['ip'] ?? null,
-                    ]
-                ];
-            });
-    }
-
-    /**
-     * SOLUSI ALTERNATIF: Mapping berdasarkan IP atau pola lain
-     * Jika SN tidak cocok, coba match by IP atau data lain
-     */
-    private function findLocationByAlternative($onu, Collection $locationData): ?array
-    {
-        // Jika ada data IP di ONU, coba match by IP
-        if (!empty($onu['ip'])) {
-            $found = $locationData->first(function ($loc) use ($onu) {
-                return isset($loc['ip']) && $loc['ip'] === $onu['ip'];
-            });
-            
-            if ($found) {
-                return $found;
-            }
-        }
-
-        // Tambahkan logika matching lain di sini jika diperlukan
-        // Misalnya by MAC address, by hostname, dll
-        
-        return null;
+            ->filter(fn($r) => !empty($r['ip']))
+            ->mapWithKeys(fn($r) => [
+                trim($r['ip']) => [
+                    'location'     => $r['nama_lokasi'] ?? null,
+                    'kemantren'    => $r['kemantren']   ?? null,
+                    'kelurahan'    => $r['kelurahan']   ?? null,
+                    'rt'           => $r['rt']          ?? null,
+                    'rw'           => $r['rw']          ?? null,
+                    'id_lifemedia' => $r['id_lifemedia'] ?? null,
+                ],
+            ]);
     }
 
 
@@ -132,90 +103,78 @@ class AccessPointController extends Controller
         }
 
         /* ========= CACHE CSV ========= */
-        $locationData = Cache::remember(
-            'ont_locations_v3',
-            now()->addDay(),
-            fn() => $this->loadOntLocations()
+        // CSV di-index by IP — hanya untuk lookup lokasi
+        $locationByIp = Cache::remember(
+            'ont_location_by_ip',
+            86400,
+            fn() => $this->readLocationMapByIp()
         );
 
-        /* ========= LOG STATISTIK ========= */
-        \Log::info('Location Data Stats', [
-            'total_locations' => $locationData->count(),
-            'total_devices' => count($onuData),
-            'sample_csv_sn' => $locationData->keys()->take(5)->toArray(),
-            'sample_api_sn' => collect($onuData)->pluck('sn')->take(5)->toArray(),
-        ]);
-
         /* ========= MERGE DATA ========= */
-        $devices = collect($onuData)->map(function ($onu) use ($connectData, $locationData) {
-            $sn = $this->normalizeSn($onu['sn'] ?? null);
+        $devices = collect($onuData)->map(function ($onu) use ($connectData, $locationByIp) {
+            $sn      = $this->normalizeSn($onu['sn'] ?? null);
             $connect = $connectData->get($sn, []);
-            
-            // Primary: Match by SN
-            $location = $locationData->get($sn);
-            
-            // Fallback: Match by alternative method (IP, etc)
-            if (!$location) {
-                $location = $this->findLocationByAlternative($onu, $locationData);
-            }
+
+            // IP dari API sebagai primary key untuk lookup lokasi
+            $apiIp   = trim($onu['ip'] ?? '');
+            $location = $apiIp ? $locationByIp->get($apiIp) : null;
 
             $userCount =
                 count($connect['wifiClients']['5G'] ?? []) +
                 count($connect['wifiClients']['2_4G'] ?? []) +
                 count($connect['wifiClients']['unknown'] ?? []);
 
-            // Format lokasi
-            $lokasiParts = collect([
-                $location['kelurahan'] ?? null,
-                $location['kemantren'] ?? null,
-            ])->filter();
-
-            $formattedLokasi = 'Lokasi Tidak Diketahui';
-            $isNewDevice = false;
-            
-            if ($lokasiParts->count() > 0) {
-                $formattedLokasi = $lokasiParts->implode(' - ');
-            } else {
-                // Tandai sebagai device baru yang perlu di-update
-                $isNewDevice = true;
-                
-                // Bisa ditambahkan info IP jika ada
-                if (!empty($onu['ip'])) {
-                    $formattedLokasi = "Lokasi Tidak Diketahui (IP: {$onu['ip']})";
-                }
-            }
-
             return [
-                'sn' => $sn,
-                'original_sn' => $onu['sn'] ?? null,
-                'model' => $onu['model'] ?? '-',
-                'state' => strtolower($connect['state'] ?? $onu['state'] ?? 'offline'),
-                'lokasi' => $formattedLokasi,
-                'lokasi_found' => $lokasiParts->count() > 0,
-                'is_new_device' => $isNewDevice,
+                // Semua data dari API
+                'sn'           => $sn,
+                'model'        => $onu['model'] ?? '-',
+                'state'        => strtolower($connect['state'] ?? $onu['state'] ?? 'offline'),
+                'ip'           => $apiIp ?: '-',
+                // Lokasi dari CSV (matched by IP), fallback jika tidak ketemu
+                'location'     => $location['location']     ?? 'Lokasi Tidak Diketahui',
+                'kemantren'    => $location['kemantren']     ?? '-',
+                'kelurahan'    => $location['kelurahan']     ?? '-',
+                'rt'           => (string) ($location['rt'] ?? ''),
+                'rw'           => (string) ($location['rw'] ?? ''),
+                'id_lifemedia' => $location['id_lifemedia']  ?? '-',
+                'location_found' => $location !== null,
                 'wifi_user_count' => $userCount,
-                'wifiClients' => $connect['wifiClients'] ?? [],
+                'wifiClients'  => $connect['wifiClients'] ?? [],
             ];
         });
 
         /* ========= SEARCH ========= */
         if ($search = $request->get('search')) {
-            $devices = $devices->filter(
-                fn($d) =>
-                str_contains(strtolower($d['sn']), strtolower($search)) ||
-                str_contains(strtolower($d['model']), strtolower($search)) ||
-                str_contains(strtolower($d['lokasi']), strtolower($search))
-            );
+            $terms = preg_split('/\s+/', strtolower(trim($search)));
+            $devices = $devices->filter(function ($d) use ($terms) {
+                $hay = strtolower(implode(' ', [
+                    $d['sn'] ?? '',
+                    $d['model'] ?? '',
+                    $d['location'] ?? '',
+                    $d['kemantren'] ?? '',
+                    $d['kelurahan'] ?? '',
+                    $d['ip'] ?? '',
+                    $d['id_lifemedia'] ?? '',
+                ]));
+                foreach ($terms as $term) {
+                    if ($term !== '' && !str_contains($hay, $term)) return false;
+                }
+                return true;
+            });
+        }
+
+        /* ========= FILTER BY STATE ========= */
+        if ($stateFilter = $request->get('state')) {
+            $devices = $devices->filter(fn($d) => $d['state'] === strtolower($stateFilter));
         }
 
         /* ========= SUMMARY ========= */
         $summary = [
-            'total' => $devices->count(),
-            'online' => $devices->where('state', 'online')->count(),
-            'offline' => $devices->where('state', '!=', 'online')->count(),
-            'users' => $devices->sum('wifi_user_count'),
-            'lokasi_ditemukan' => $devices->where('lokasi_found', true)->count(),
-            'device_baru' => $devices->where('is_new_device', true)->count(),
+            'total'            => $devices->count(),
+            'online'           => $devices->where('state', 'online')->count(),
+            'offline'          => $devices->where('state', '!=', 'online')->count(),
+            'users'            => $devices->sum('wifi_user_count'),
+            'lokasi_ditemukan' => $devices->where('location_found', true)->count(),
         ];
 
         /* ========= PAGINATION ========= */
@@ -255,7 +214,6 @@ class AccessPointController extends Controller
                 'offline' => 0,
                 'users' => 0,
                 'lokasi_ditemukan' => 0,
-                'device_baru' => 0,
             ],
             'error' => $error,
             'search' => $request->get('search'),

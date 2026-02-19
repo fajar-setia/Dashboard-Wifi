@@ -1,4 +1,4 @@
-NO,ID LM,IP,SN,Lokasi,Kemantren,Kelurahan,RT,RW,Tikor,Paket,Link,,,
+NO,ID Life Media,IP,SN,Lokasi,Kemantren,Kelurahan,RT,RW,Titik Koordinat,Paket,Link,,,
 1,JP001855,10.239.0.125,QXTLC7319D1B,Balai Manunggal Karso Gajah Wong,Gondokusuman,Baciro,85,20,"-7.789536, 110.394946",APBD,Optic,,,JUMLAH
 2,XM000362,10.239.0.138,ZTEGC1CBFD74,Masjid Pasarean Sonyoragi Baciro,Gondokusuman,Baciro,42,11,"-7.792968, 110.385587",APBD,Optic,,Lokasi pengganti dari CSR ke APBD,
 3,LM000855,10.239.0.124,ELWGC366A8C7,Balai RW 20,Gondokusuman,Baciro,,20,"-7.790224, 110.394924",APBD,Optic,,Masuk ACS,108

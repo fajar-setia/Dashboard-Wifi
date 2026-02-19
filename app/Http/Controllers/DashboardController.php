@@ -965,6 +965,7 @@ class DashboardController extends Controller
                 'ip'         => $get($row, 'ip'),
                 'pic'        => $get($row, 'pic'),
                 'coordinate' => $get($row, 'titik_koordinat'),
+                'id_lifemedia' => $get($row, 'id_lifemedia'),
             ];
         }
 

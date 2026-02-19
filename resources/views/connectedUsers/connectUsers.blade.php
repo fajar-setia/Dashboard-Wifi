@@ -41,7 +41,7 @@
 
                         <!-- Box 30% -->
                         <div class="col-span-3 bg-gradient-to-br from-slate-50 to-blue-50/40 dark:bg-gradient-to-br dark:from-slate-700 dark:to-slate-700/80 p-4 rounded-lg text-slate-900 dark:text-white space-y-2 border-2 border-slate-200 dark:border-slate-600 shadow-sm">
-                            <p class="font-semibold text-lg text-cyan-600 dark:text-cyan-400">{{ is_array($ap['location'] ?? null) ? implode(', ', $ap['location']) : ($ap['location'] ?? ($ap['sn'] ?? 'Unknown')) }}</p>
+                            <p class="font-semibold text-lg text-cyan-600 dark:text-cyan-400">{{ $ap['location'] ?? 'Lokasi Tidak Diketahui' }}</p>
                             <p class="text-sm text-slate-600 dark:text-slate-400">SN: <span class="font-medium text-slate-800 dark:text-slate-200">{{ $ap['sn'] ?? '-' }}</span></p>
                             <p class="text-sm text-slate-600 dark:text-slate-400">Model: <span class="font-medium text-slate-800 dark:text-slate-200">{{ $ap['model'] ?? '-' }}</span></p>
                             <p class="text-sm text-slate-600 dark:text-slate-400">Kemantren: <span class="font-medium text-slate-800 dark:text-slate-200">{{ is_array($ap['kemantren'] ?? null) ? implode(', ', $ap['kemantren']) : ($ap['kemantren'] ?? '-') }}</span></p>
