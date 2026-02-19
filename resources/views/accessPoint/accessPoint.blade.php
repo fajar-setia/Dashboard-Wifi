@@ -145,15 +145,21 @@
                                 </h3>
                             </div>
 
-                            {{-- Model --}}
-                            <div class="mb-3 pb-3 border-b border-slate-200 dark:border-slate-700">
+                            {{-- Model + User Count --}}
+                            <div class="mb-3 pb-3 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between gap-2">
                                 <div class="flex items-center gap-2">
-                                    <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <svg class="w-4 h-4 text-slate-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z"/>
                                     </svg>
                                     <p class="text-sm font-semibold text-slate-700 dark:text-slate-300">
                                         {{ $d['model'] }}
                                     </p>
+                                </div>
+                                <div class="flex items-center gap-1 bg-cyan-50 dark:bg-cyan-900/30 px-2 py-0.5 rounded-full flex-shrink-0">
+                                    <svg class="w-3 h-3 text-cyan-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/>
+                                    </svg>
+                                    <span class="text-xs font-bold text-cyan-600 dark:text-cyan-400">{{ $d['wifi_user_count'] }}</span>
                                 </div>
                             </div>
 
