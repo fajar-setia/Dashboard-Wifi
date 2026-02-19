@@ -64,9 +64,9 @@
 
                     <select name="perPage" onchange="this.form.submit()"
                         class="bg-white dark:bg-slate-800 border-2 border-slate-300 dark:border-slate-600 rounded-lg px-3 py-2 text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 shadow-sm">
-                        @foreach ([10, 25, 50, 100] as $n)
-                            <option value="{{ $n }}" {{ request('perPage', 10) == $n ? 'selected' : '' }}>
-                                {{ $n }}
+                        @foreach (['15' => '15', '25' => '25', '50' => '50', 'all' => 'Semua'] as $val => $label)
+                            <option value="{{ $val }}" {{ request('perPage', '15') == $val ? 'selected' : '' }}>
+                                {{ $label }}
                             </option>
                         @endforeach
                     </select>
@@ -119,7 +119,7 @@
                     </div>
                 </div>
             @else
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
                     @foreach ($devices as $d)
                         <div class="group bg-white dark:bg-slate-800 rounded-xl p-5 border-2 border-slate-200 dark:border-slate-700 shadow-md hover:shadow-xl hover:scale-105 transition-all duration-300 relative overflow-hidden">
                             

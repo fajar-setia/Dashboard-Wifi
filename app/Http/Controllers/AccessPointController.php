@@ -178,11 +178,13 @@ class AccessPointController extends Controller
         ];
 
         /* ========= PAGINATION ========= */
-        $perPage = (int) $request->get('perPage', 10);
-        $page = (int) $request->get('page', 1);
+        $perPageRaw = $request->get('perPage', '15');
+        $showAll    = $perPageRaw === 'all';
+        $perPage    = $showAll ? $devices->count() ?: 1 : (int) $perPageRaw;
+        $page       = $showAll ? 1 : (int) $request->get('page', 1);
 
         $paginated = new LengthAwarePaginator(
-            $devices->forPage($page, $perPage)->values(),
+            $showAll ? $devices->values() : $devices->forPage($page, $perPage)->values(),
             $devices->count(),
             $perPage,
             $page,
